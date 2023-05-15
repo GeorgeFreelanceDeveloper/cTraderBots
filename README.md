@@ -1,2 +1,2 @@
 # cTraderBots
-Ctrader bots for automation tasks in trading.
+cTrader bots for automation tasks in trading.
