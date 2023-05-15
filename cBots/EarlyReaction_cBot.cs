@@ -7,6 +7,7 @@ using cAlgo.API.Collections;
 using cAlgo.API.Indicators;
 using cAlgo.API.Internals;
 
+
 /*
 Name: EarlyReaction_cBot
 Description: Bot checks whether there was a reaction to the trading level earlier, if so, it cancels the given trade.
@@ -35,6 +36,9 @@ namespace cAlgo.Robots
         protected override void OnBar() 
         {
             Print("Check early reaction ...");
+            
+            RemoveNotExistsIds();
+            
             foreach (var order in PendingOrders)
             {
                 if (order.StopLoss == null)
@@ -45,8 +49,7 @@ namespace cAlgo.Robots
                 double beforeEntryPrice = order.TargetPrice + (((double) order.TargetPrice - (double) order.StopLoss) * PercentageBeforeEntry);
                 
                 Bar lastBar = MarketData.GetBars(TimeFrame.Minute, order.SymbolName).Last();
-                
-                Print(beforeEntryPrice);
+
                 if (!BeforeEntryIds.Contains(order.Id) && 
                 (((order.TradeType == TradeType.Buy && beforeEntryPrice >= lastBar.Low)) || (order.TradeType == TradeType.Sell && beforeEntryPrice <= lastBar.High)))
                 {
@@ -69,6 +72,31 @@ namespace cAlgo.Robots
         protected override void OnStop()
         {
         
+        }
+        
+        private void RemoveNotExistsIds()
+        {
+            List<int> ids = new List<int>();
+            List<int> notExistsIds = new List<int>();
+            
+            foreach (var order in PendingOrders)
+            {
+                ids.Add(order.Id);
+            }
+            
+            foreach (var id in BeforeEntryIds)
+            {
+                if (!ids.Contains(id))
+                {
+                    notExistsIds.Add(id);
+                }
+            }
+            
+            foreach(var id in notExistsIds)
+            {
+                BeforeEntryIds.Remove(id);
+            }
+            
         }
     }
 }
