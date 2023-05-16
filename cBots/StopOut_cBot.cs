@@ -13,7 +13,7 @@ Name: StopOut_cBot
 Description: Bot checking for sufficient equity for trading, if the equity falls below the set limit, all positions and pending orders will be terminated.
 Author: GeorgeQuantAnalyst
 Date: 15.5.2023
-Version: 0.1.0
+Version: 1.0.0
 */
 
 namespace cAlgo.Robots
@@ -32,7 +32,7 @@ namespace cAlgo.Robots
         
         protected override void OnBar() 
         {
-            Print("Check sufficient equity for trading");
+            Print("Start check sufficient equity for trading");
             if (Account.Equity > EquityStopOut)
             {
                 Print("Sufficient equity for trading. [Equity: {0}, EquityStopOut: {1}]", Account.Equity, EquityStopOut);
@@ -54,7 +54,7 @@ namespace cAlgo.Robots
             
                 Print("Finished close all pending orders and positions");
             }
-            
+            Print("Finished check sufficient equity for trading");
         }
         
 

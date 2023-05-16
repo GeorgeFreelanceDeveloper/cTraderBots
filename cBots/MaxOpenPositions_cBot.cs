@@ -9,10 +9,10 @@ using cAlgo.API.Internals;
 
 /*
 Name: MaxOpenPositions_cBot
-Description: Bot controlling the maximum number of open positions, if more than allowed limit, the newer position will be closed. 
+Description: Bot controlling the maximum number of open positions, if more than allowed limit, the newer positions will be closed. 
 Author: GeorgeQuantAnalyst
 Date: 15.5.2023
-Version: 0.1.0
+Version: 1.0.0
 */
 
 namespace cAlgo.Robots
@@ -31,6 +31,7 @@ namespace cAlgo.Robots
 
         protected override void OnBar()
         {
+        
             Print("Check open more positions than max allowed position: {0}", MaxAllowedOpenPositions);
             
             if (Positions.Count > MaxAllowedOpenPositions)

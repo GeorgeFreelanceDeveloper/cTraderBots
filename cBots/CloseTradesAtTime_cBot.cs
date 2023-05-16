@@ -13,7 +13,7 @@ Name: CloseTradesAtTime_cBot
 Description: Bot closing pending orders and position at defined time. You can set close for all or specific currency pairs.
 Author: GeorgeQuantAnalyst
 Date: 15.5.2023
-Version: 0.1.0
+Version: 1.0.0
 */
 
 namespace cAlgo.Robots
@@ -46,7 +46,7 @@ namespace cAlgo.Robots
         
         protected override void OnTimer()
         {
-             Print("Start closing orders and positions");
+             Print("Start closing orders and positions by timer");
 
              if(All)
              {
@@ -59,6 +59,7 @@ namespace cAlgo.Robots
              
              Timer.Stop();
              Stop();
+             Print("Finished closing orders and positions by timer");
         }
         
         private void CancelOrdersAndPositionsForAllCurrencies()

@@ -13,7 +13,7 @@ Name: EarlyReaction_cBot
 Description: Bot checks whether there was a reaction to the trading level earlier, if so, it cancels the given trade.
 Author: GeorgeQuantAnalyst
 Date: 15.5.2023
-Version: 0.1.0
+Version: 1.0.0
 */
 
 namespace cAlgo.Robots
@@ -30,20 +30,19 @@ namespace cAlgo.Robots
         protected override void OnStart()
         {
             BeforeEntryIds = new List<int>();
-            OnBar();
         }
 
         protected override void OnBar() 
         {
-            Print("Check early reaction ...");
+            Print("Start check early reaction.");
             
             RemoveNotExistsIds();
             
             foreach (var order in PendingOrders)
             {
-                if (order.StopLoss == null)
+                if (order.StopLoss == null || order.TakeProfit == null)
                 {
-                    Print("Order {0} does not have define stop loss price, continue to new order.", order.Id);
+                    Print("Order {0} does not have bracked orders (profit target and stop loss), continue to next order.", order.Id);
                     continue;
                 }
                 double beforeEntryPrice = order.TargetPrice + (((double) order.TargetPrice - (double) order.StopLoss) * PercentageBeforeEntry);
@@ -67,6 +66,8 @@ namespace cAlgo.Robots
                 }
                 
             }
+            
+            Print("Finished check early reaction.");
         }
 
         protected override void OnStop()
