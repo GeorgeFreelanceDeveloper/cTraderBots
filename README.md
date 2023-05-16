@@ -1,10 +1,10 @@
 # cTraderBots
 cTrader bots for automation tasks in trading (place pending orders and manage risk).
 
-## What Is cTrader Automate
+## What is cTrader Automate
 cTrader Automate is a feature of cTrader desktop. It allows for developing and operating custom trading indicators and cBots.
 
-## What Is a cBot
+## What is a cBot
 Think of cBots as programs that run inside cTrader desktop and autonomously execute and manage trading operations. cBots can be designed to perform almost any trading activity such as opening positions or placing orders depending on certain conditions.
 
 ## Developed cBots
