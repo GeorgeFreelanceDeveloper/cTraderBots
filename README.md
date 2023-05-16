@@ -19,6 +19,6 @@ Think of cBots as programs that run inside cTrader desktop and autonomously exec
 * [.NET Framework download link](https://dotnet.microsoft.com/en-us/download/dotnet-framework)
 * [cTrader download link](https://ctrader.com/download/)
 
-## Ctrader cbot documentation
+## Ctrader cBot documentation
 * [ctrader.com - documentation](https://help.ctrader.com/ctrader-automate/)
 * [ctrader.com - references](https://help.ctrader.com/ctrader-automate/references/)
