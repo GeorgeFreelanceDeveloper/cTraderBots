@@ -1,5 +1,5 @@
 # cTraderBots
-cTrader bots for automation tasks in trading (place pending orders and manage risk).
+cTrader bots for automation tasks in trading (place pending orders and manage risk) on Forex market.
 
 ## What is cTrader Automate
 cTrader Automate is a feature of cTrader desktop. It allows for developing and operating custom trading indicators and cBots.
