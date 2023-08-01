@@ -9,6 +9,13 @@ using cAlgo.API.Indicators;
 using cAlgo.API.Internals;
 using System.Text.RegularExpressions;
 
+/*
+Name: CommoditiesLevelTrader_cBot
+Description: Bot for automatic control trades on commodities (reduce risk after price go right way, early reaction and elimination open order in spike movement)
+Author: GeorgeQuantAnalyst
+Date: 1.8.2023
+Version: 1.0.0
+*/
 namespace cAlgo.Robots
 {
     [Robot(AccessRights = AccessRights.None)]
