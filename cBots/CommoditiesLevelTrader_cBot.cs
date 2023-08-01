@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 
 /*
 Name: CommoditiesLevelTrader_cBot
-Description: Bot for automatic control trades on commodities (reduce risk after price go right way, early reaction and elimination open order in spike movement)
+Description: An automated bot for controlling trades on commodities. The bot helps reduce risk by adjusting positions when prices move favorably, cancel pending order when trade early reaction and eliminates open orders during sudden price spikes.
 Author: GeorgeQuantAnalyst
 Date: 1.8.2023
 Version: 1.0.0
