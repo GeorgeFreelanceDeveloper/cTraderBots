@@ -7,7 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.0.0] - 2023-08-02
 ### Added
+- CommoditiesLevelTrader_cBot: created
 - EarlyReaction_cBot: created
 - MaxOpenPositions_cBot: created
 - CloseTradesAtTime_cBot: created

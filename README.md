@@ -8,9 +8,13 @@ cTrader Automate is a feature of cTrader desktop. It allows for developing and o
 Think of cBots as programs that run inside cTrader desktop and autonomously execute and manage trading operations. cBots can be designed to perform almost any trading activity such as opening positions or placing orders depending on certain conditions.
 
 ## Developed cBots
+**Actively supported**
+* **CommoditiesLevelTrader_cBot**: An automated bot for controlling trades on commodities. The bot helps reduce risk by adjusting positions when prices move favorably, cancel pending order when trade early reaction and eliminates open orders during sudden price spikes.
+* **StopOut_cBot**: Bot checking for sufficient equity for trading, if the equity falls below the set limit, all positions and pending orders will be terminated.
+
+**Old not supported**
 * **EarlyReaction_cBot**: Bot checks whether there was a reaction to the trading level earlier, if so, it cancels the given trade.
 * **MaxOpenPositions_cBot**: Bot controlling the maximum number of open positions, if more than allowed limit, the newer positions will be closed.
-* **StopOut_cBot**: Bot checking for sufficient equity for trading, if the equity falls below the set limit, all positions and pending orders will be terminated.
 * **CloseTradesAtTime_cBot**: Bot closing pending orders and position at defined time. You can set close for all or specific currency pairs.
 * **PlacePendingOrders_cBot (In-development)**: Bot compute profit targes, amount orders and place pending ordes to trading platform from CSV file.
 
