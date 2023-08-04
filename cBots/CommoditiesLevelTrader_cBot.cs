@@ -157,7 +157,7 @@ namespace cAlgo.Robots
                     return;
                 }
                 
-                if(ReachBeforeEntryPriceTimestamp.Subtract(ReachBeforeEntryPriceTimestamp).TotalMinutes < PlaceTradeDelayInMinutes)
+                if(ReachBeforeEntryPriceTimestamp.Subtract(ReachProfitTargetTimestamp).TotalMinutes < PlaceTradeDelayInMinutes)
                 {
                     Print("Most fast movement to level, order do not place on exchange.");
                     Stop();
