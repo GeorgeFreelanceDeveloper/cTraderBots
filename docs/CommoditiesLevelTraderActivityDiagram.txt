@@ -2,7 +2,7 @@
 
 skin rose
 
-title Conditional - Activity Diagram
+title CommoditiesLevelTrader - Activity Diagram
 
 start
 :Validate inputs;
@@ -25,6 +25,7 @@ else (no)
 endif
 
 
+repeat
 if (Was order expired?) then (yes)
   :Print "Time of trade expired, bot will stop.";
   stop
@@ -63,7 +64,7 @@ else (no)
 endif
 note left: ReachProfitTarget && !ReachBeforeEntryPrice && WasReachBeforeEntryPrice(lastBar)
 
-if (Was reach before profit target after before entry price?) then (yes)
+if (Was reach profit target after before entry price?) then (yes)
   :Print "Price reach profit target after hit beforeEntryPrice.";
   :Print "Cancel pending order if exist.";
   :CancelLimitOrder;
@@ -72,13 +73,12 @@ else (no)
 endif
 note left: ReachBeforeEntryPrice && WasReachProfitTargetAfterBeforeEntryPrice(lastBar)
 
-if (Was reach before entry price and pending order is active?) then (yes)
+if (Was reach before entry price and not pending order is active?) then (yes)
   :Print "Pending order was activate.";
   stop
 else (no)
 endif
-note left: ReachBeforeEntryPrice && !IsPendingOrderActive()
-
+repeat while (User terminate)
 stop
 
 @enduml
