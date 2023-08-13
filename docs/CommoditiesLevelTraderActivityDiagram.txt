@@ -2,7 +2,7 @@
 
 skin rose
 
-title CommoditiesLevelTrader - Activity Diagram
+title CommoditiesLevelTrader_cBot - Activity Diagram
 
 start
 :Validate inputs;
