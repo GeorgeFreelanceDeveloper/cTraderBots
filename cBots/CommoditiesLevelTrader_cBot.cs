@@ -14,7 +14,7 @@ Name: CommoditiesLevelTrader_cBot
 Description: An automated bot for controlling trades on commodities. The bot helps reduce risk by adjusting positions when prices move favorably, cancel pending order when trade early reaction and eliminates open orders during sudden price spikes.
 Author: GeorgeQuantAnalyst
 Date: 1.8.2023
-Version: 1.0.0
+Version: 1.0.1
 */
 namespace cAlgo.Robots
 {
@@ -32,7 +32,7 @@ namespace cAlgo.Robots
         public TradeDirectionType Direction {get; set;}
         
         [Parameter(DefaultValue = 10)]
-        public double RiskPerTradeInUsd {get; set;}
+        public double RiskPerTrade {get; set;}
         
         [Parameter(DefaultValue = 60)]
         public int PlaceTradeDelayInMinutes {get; set;}
@@ -93,10 +93,10 @@ namespace cAlgo.Robots
                 Stop();
                 return;
             }
-            
+
             Move = EntryPrice - StopLossPrice;
             TakeProfitPrice = EntryPrice + Move;
-            double AmountRaw = RiskPerTradeInUsd/Math.Abs(Move);
+            double AmountRaw = RiskPerTrade / ((Math.Abs(Move)/Symbol.PipSize)*Symbol.PipValue);
             Amount = ((int)(AmountRaw / Symbol.VolumeInUnitsStep)) * Symbol.VolumeInUnitsStep;
             BeforeEntryPrice = EntryPrice + ((EntryPrice - StopLossPrice) * PercentageBeforeEntry);
             ExpirationDate = ExpirationDateString == String.Empty ? null : DateTime.Parse(ExpirationDateString);
@@ -110,7 +110,7 @@ namespace cAlgo.Robots
             Print(String.Format("Amount: {0} lots", Symbol.VolumeInUnitsToQuantity(Amount)));
             Print(String.Format("BeforeEntryPrice: {0}", BeforeEntryPrice));
             Print(String.Format("ExpirationDate: {0}", ExpirationDate));
-
+            
             var errMessages = ValidateComputeValues();
             if(errMessages.Count > 0)
             {
@@ -273,9 +273,9 @@ namespace cAlgo.Robots
                 errMessages.Add(String.Format("WARNING: StopLossPrice must be greater than 0. [StopLossPrice: {0}]", StopLossPrice));
             }
             
-            if (RiskPerTradeInUsd <= 0)
+            if (RiskPerTrade <= 0)
             {
-                 errMessages.Add(String.Format("WARNING: RiskPerTradeInUsd must be greater than 0. [RiskPerTradeInUsd: {0}]", RiskPerTradeInUsd));
+                 errMessages.Add(String.Format("WARNING: RiskPerTrade must be greater than 0. [RiskPerTrade: {0}]", RiskPerTrade));
             }
             
             if (PlaceTradeDelayInMinutes < 0)
