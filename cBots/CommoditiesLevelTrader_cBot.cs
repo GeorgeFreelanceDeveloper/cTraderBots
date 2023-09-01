@@ -96,7 +96,11 @@ namespace cAlgo.Robots
         protected override void OnStart()
         {
             Print("Start CommoditiesLevelTrader_cBot");
+
+            Print("User defined properties:);
+            //TODO: Lucka
             
+            Print("Validation inputs ...");
             var inputErrorMessages = ValidateInputs();
             if(inputErrorMessages.Count > 0)
             {
@@ -109,6 +113,7 @@ namespace cAlgo.Robots
                 return;
             }
 
+            Print("Compute properties ... ")
             TradeId = System.Guid.NewGuid().ToString();
             Move = EntryPrice - StopLossPrice;
             TakeProfitPrice = EntryPrice + Move;
@@ -126,7 +131,7 @@ namespace cAlgo.Robots
             TrailingStopLossLevel2Price = EntryPrice + (Move * TrailingStopLossLevel2Percentage);
             ExpirationDate = ExpirationDateString == String.Empty ? null : DateTime.Parse(ExpirationDateString);
             
-            Print("Compute properties:");
+            Print("Computed properties:");
             Print(String.Format("TradeId: {0}", TradeId));
             Print(String.Format("Move: {0}", Move));
             Print(String.Format("Take profit price: {0}", TakeProfitPrice));
@@ -142,7 +147,8 @@ namespace cAlgo.Robots
             Print(String.Format("StopLossLevel2Pips: {0}", StopLossLevel2Pips));
             Print(String.Format("TakeProfitPips: {0}", TakeProfitPips));
             Print(String.Format("ExpirationDate: {0}", ExpirationDate));
-            
+
+            Print("Validate computed properties");
             var errMessages = ValidateComputeValues();
             if(errMessages.Count > 0)
             {
@@ -155,7 +161,7 @@ namespace cAlgo.Robots
                 return;
             }
             
-            // Registrate listeners
+            Print("Register listeners");
             Positions.Opened += PositionsOnOpened;
             Positions.Closed += PositionsOnClosed;
         }
