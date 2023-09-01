@@ -15,7 +15,7 @@ Description: An automated bot for controlling trades on commodities. The bot hel
 Author: GeorgeQuantAnalyst
 Date: 1.8.2023
 Update: 1.9.2023
-Version: 1.0.2.SNAPSHOT
+Version: 1.1.0
 */
 namespace cAlgo.Robots
 {
@@ -127,7 +127,7 @@ namespace cAlgo.Robots
             ExpirationDate = ExpirationDateString == String.Empty ? null : DateTime.Parse(ExpirationDateString);
             
             Print("Compute properties:");
-            //TODO: Lucka TradeId
+            Print(String.Format("TradeId: {0}", TradeId));
             Print(String.Format("Move: {0}", Move));
             Print(String.Format("Take profit price: {0}", TakeProfitPrice));
             Print(String.Format("Amount raw: {0}", AmountRaw));
@@ -137,8 +137,10 @@ namespace cAlgo.Robots
             Print(String.Format("BeforeEntryPrice: {0}", BeforeEntryPrice));
             Print(String.Format("TrailingStopLossLevel1Price: {0}", TrailingStopLossLevel1Price));
             Print(String.Format("TrailingStopLossLevel2Price: {0}", TrailingStopLossLevel2Price));
-            //TODO: Lucka StopLossLevel1Pips, StopLossLevel2Pips, StopLossLevel3Pips
-            //TODO: Lucka TakeProfitPips
+            Print(String.Format("StopLossPips: {0}", StopLossPips));
+            Print(String.Format("StopLossLevel1Pips: {0}", StopLossLevel1Pips));
+            Print(String.Format("StopLossLevel2Pips: {0}", StopLossLevel2Pips));
+            Print(String.Format("TakeProfitPips: {0}", TakeProfitPips));
             Print(String.Format("ExpirationDate: {0}", ExpirationDate));
             
             var errMessages = ValidateComputeValues();
@@ -362,11 +364,16 @@ namespace cAlgo.Robots
             {
                 errMessages.Add(String.Format("WARNING: ExpirationDateString must contains valid date in format YYYY/MM/DD example 2000/01/01: [ExpirationDateString: {0}]", ExpirationDateString));
             }
-            
-            //TODO: Lucka >0 and <1
-            //TrailingStopLossLevel1Percentage
-            //TrailingStopLossLevel2Percentage
-            
+
+            if (TrailingStopLossLevel1Percentage <= 0.0 && TrailingStopLossLevel1Percentage >= 1.0)
+            {
+                errMessages.Add(String.Format("WARNING: TrailingStopLossLevel1Percentage must be between 0.0 and 1.0 (0 => 0%, 1 => 100%). [TrailingStopLossLevel1Percentage: {0}]", TrailingStopLossLevel1Percentage));
+            }
+
+            if (TrailingStopLossLevel2Percentage <= 0.0 && TrailingStopLossLevel2Percentage >= 1.0)
+            {
+                errMessages.Add(String.Format("WARNING: TrailingStopLossLevel2Percentage must be between 0.0 and 1.0 (0 => 0%, 1 => 100%). [TrailingStopLossLevel2Percentage: {0}]", TrailingStopLossLevel2Percentage));
+            }
             return errMessages;
         }
         
