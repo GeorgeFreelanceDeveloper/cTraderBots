@@ -14,13 +14,16 @@ Name: CommoditiesLevelTrader_cBot
 Description: An automated bot for controlling trades on commodities. The bot helps reduce risk by adjusting positions when prices move favorably, cancel pending order when trade early reaction and eliminates open orders during sudden price spikes.
 Author: GeorgeQuantAnalyst
 Date: 1.8.2023
-Version: 1.0.1
+Update: 1.9.2023
+Version: 1.0.2.SNAPSHOT
 */
 namespace cAlgo.Robots
 {
     [Robot(AccessRights = AccessRights.None)]
     public class CommoditiesLevelTrader_cBot : Robot
     {
+        
+        // User defined properties
         
         [Parameter(DefaultValue = 0)]
         public double EntryPrice {get; set;}
@@ -39,9 +42,6 @@ namespace cAlgo.Robots
 
         [Parameter(DefaultValue = 0.7)]
         public double TrailingStopLossLevel2Percentage {get; set;}
-
-        [Parameter(DefaultValue = 0.8)]
-        public double EighyPercentageFromStopLoss {get; set;}
         
         [Parameter(DefaultValue = 60)]
         public int PlaceTradeDelayInMinutes {get; set;}
@@ -53,42 +53,40 @@ namespace cAlgo.Robots
         [Parameter(DefaultValue = "")]
         public string ExpirationDateString {get; set;}
         
-        private Regex ExpirationDatePattern = new Regex(@"^\d{4}/\d{2}/\d{2}$");
         
+        // Constants
+        private Regex ExpirationDatePattern = new Regex(@"^\d{4}/\d{2}/\d{2}$");
         private readonly double PercentageBeforeEntry = 0.33;
         
-        private double BeforeEntryPrice {get; set;}
+        // Ids
+        private int PendingOrderId {get; set;}
+        private String TradeId {get; set;}
         
-        private double TakeProfitPrice {get; set;}
-
-        private double TrailingStopLossLevel1Price {get; set;}
-
-        private double TrailingStopLossLevel2Price {get; set;}
-        
+        // Computed properties
         private double Move {get; set;}
-        
         private double Amount {get; set;}
+        private double BeforeEntryPrice {get; set;}
+        private double TakeProfitPrice {get; set;}
+        private double TrailingStopLossLevel1Price {get; set;}
+        private double TrailingStopLossLevel2Price {get; set;}
+        private double StopLossPips {get; set;}
+        private double StopLossLevel1Pips {get; set;}
+        private double StopLossLevel2Pips {get; set;}
+        private double TakeProfitPips {get; set;}
         
+        // Timestamps
         private DateTime? ExpirationDate {get; set;}
-        
-        private bool ReachProfitTarget {get; set;}
-        
         private DateTime ReachProfitTargetTimestamp {get; set;}
-        
-        private bool ReachBeforeEntryPrice {get; set;}
-        
         private DateTime ReachBeforeEntryPriceTimestamp {get; set;}
         
+        // States
+        private bool ReachProfitTarget {get; set;}
+        private bool ReachBeforeEntryPrice {get; set;}
         private bool ReachProfitTargetAfterBeforeEntryPrice {get; set;}
-
-        private bool ReachedEntryPrice {get; set;}
-
-        private bool ReachedFiftyPercetAfterEntry {get; set;}
-        
-        private int PendingOrderId {get; set;}
-        
-
-        
+        private bool ReachTrailingStopLossLevel1Price {get; set;}
+        private bool ReachTrailingStopLossLevel2Price {get; set;}
+        private bool IsActivePosition {get; set;}
+              
         public enum TradeDirectionType
         {
             LONG,
@@ -111,17 +109,25 @@ namespace cAlgo.Robots
                 return;
             }
 
+            TradeId = System.Guid.NewGuid().ToString();
             Move = EntryPrice - StopLossPrice;
             TakeProfitPrice = EntryPrice + Move;
             double AmountRaw = RiskPerTrade / ((Math.Abs(Move)/Symbol.PipSize)*Symbol.PipValue);
             Amount = ((int)(AmountRaw / Symbol.VolumeInUnitsStep)) * Symbol.VolumeInUnitsStep;
             BeforeEntryPrice = EntryPrice + (Move * PercentageBeforeEntry);
+            
+            StopLossPips = (Math.Abs(Move)/Symbol.PipSize);
+            StopLossLevel1Pips = StopLossLevel1Pips * 0.8;
+            StopLossLevel2Pips = 0;
+            
+            TakeProfitPips = (Math.Abs(Move)/Symbol.PipSize);
+            
             TrailingStopLossLevel1Price = EntryPrice + (Move * TrailingStopLossLevel1Percentage);
             TrailingStopLossLevel2Price = EntryPrice + (Move * TrailingStopLossLevel2Percentage);
             ExpirationDate = ExpirationDateString == String.Empty ? null : DateTime.Parse(ExpirationDateString);
-            EightyPercentStopLossPrice = EntryPrice + ((TakeProfitPrice - EntryPrice) * EighyPercentageFromStopLoss);
             
             Print("Compute properties:");
+            //TODO: Lucka TradeId
             Print(String.Format("Move: {0}", Move));
             Print(String.Format("Take profit price: {0}", TakeProfitPrice));
             Print(String.Format("Amount raw: {0}", AmountRaw));
@@ -131,6 +137,8 @@ namespace cAlgo.Robots
             Print(String.Format("BeforeEntryPrice: {0}", BeforeEntryPrice));
             Print(String.Format("TrailingStopLossLevel1Price: {0}", TrailingStopLossLevel1Price));
             Print(String.Format("TrailingStopLossLevel2Price: {0}", TrailingStopLossLevel2Price));
+            //TODO: Lucka StopLossLevel1Pips, StopLossLevel2Pips, StopLossLevel3Pips
+            //TODO: Lucka TakeProfitPips
             Print(String.Format("ExpirationDate: {0}", ExpirationDate));
             
             var errMessages = ValidateComputeValues();
@@ -144,6 +152,10 @@ namespace cAlgo.Robots
                 Stop();
                 return;
             }
+            
+            // Registrate listeners
+            Positions.Opened += PositionsOnOpened;
+            Positions.Closed += PositionsOnClosed;
         }
 
         protected override void OnBar()
@@ -160,14 +172,17 @@ namespace cAlgo.Robots
             
             Bar lastBar = MarketData.GetBars(TimeFrame.Minute, Symbol.Name).Last();
             
-            if (!ReachProfitTarget && WasReachProfitTarget(lastBar))
+            if (!ReachProfitTarget && 
+                WasReachPriceLevel(lastBar, TakeProfitPrice, Direction==TradeDirectionType.SHORT))
             {
                 Print("Price reach ProfitTargetPrice.");
                 ReachProfitTarget = true;
                 ReachProfitTargetTimestamp = DateTime.Now;
             }
             
-            if (ReachProfitTarget && !ReachBeforeEntryPrice && WasReachBeforeEntryPrice(lastBar))
+            if (ReachProfitTarget && 
+                !ReachBeforeEntryPrice &&
+                WasReachPriceLevel(lastBar, BeforeEntryPrice, Direction==TradeDirectionType.SHORT))
             {
                 Print("Price reach beforeEntryPrice.");
                 ReachBeforeEntryPrice = true;
@@ -192,7 +207,8 @@ namespace cAlgo.Robots
                 PendingOrderId = result.PendingOrder.Id;
             }
             
-            if (ReachBeforeEntryPrice && WasReachProfitTargetAfterBeforeEntryPrice(lastBar))
+            if (ReachBeforeEntryPrice &&
+                WasReachPriceLevel(lastBar, TakeProfitPrice, Direction == TradeDirectionType.LONG))
             {
                 Print("Price reach profit target after hit beforeEntryPrice.");
                 Print("Cancel pending order if exist.");
@@ -200,87 +216,71 @@ namespace cAlgo.Robots
                 Stop();
                 return;
             }
+
+            if (IsActivePosition && 
+                !ReachTrailingStopLossLevel1Price && 
+                WasReachPriceLevel(lastBar, TrailingStopLossLevel1Price, Direction == TradeDirectionType.LONG ))
+            {
+                Print("Price reach TrailingStopLossLevel1Price.");
+                ReachTrailingStopLossLevel1Price = true;
+                SetStopLoss(StopLossLevel1Pips);
+                return;
+            }
+
+             if (IsActivePosition && 
+                 !ReachTrailingStopLossLevel2Price && 
+                  ReachTrailingStopLossLevel1Price && 
+                  WasReachPriceLevel(lastBar, TrailingStopLossLevel2Price, Direction == TradeDirectionType.LONG))
+            {
+                Print("Price reach TrailingStopLossLevel2Price.");
+                ReachTrailingStopLossLevel2Price = true;
+                SetStopLoss(StopLossLevel2Pips);
+                Stop();
+                return;
+            }
             
-            if (ReachBeforeEntryPrice && !IsPendingOrderActive())
-            {
-                Print("Pending order was activate.");
-                ReachedEntryPrice = true;
-            }
-
-            if (ReachedEntryPrice && WasReachedFiftyPercentAfterReachingEntryPrice(lastBar))
-            {
-                Print("Price reach fifty percent after hiting entry price.");
-                ReachedFiftyPercetAfterEntry = true;
-                SetStopLossToEightyPercent();
-            }
-
-              if (ReachedEntryPrice && ReachedFiftyPercetAfterEntry && WasReachedSeventyPercentAfterReachingEntryPrice(lastBar))
-            {
-                Print("Price reach seventy percent after hiting entry price.");
-                SetStopLossToEntryPrice();
-            }
-
             Print("Finished onBar step");
+        }
+        
+        private void PositionsOnOpened(PositionOpenedEventArgs args)
+        {
+            var pos = args.Position;
+            if (TradeId.SequenceEqual(pos.Comment)){
+                 Print("Pending order was converted to position.");
+                 Print("Position opened at {0}", pos.EntryPrice);
+                 IsActivePosition = true;
+            }
+
+        }
+        
+        private void PositionsOnClosed(PositionClosedEventArgs args)
+        {
+            var pos = args.Position;
+            if(TradeId.SequenceEqual(pos.Comment)){
+                 Print("Position closed with {0} profit", pos.GrossProfit);
+                 Stop();
+            }
         }
 
         protected override void OnStop()
         {
             Print("Finished CommoditiesLevelTrader_cBot");
         }
-
-          private bool WasReachedFiftyPercentAfterReachingEntryPrice(Bar lastBar)
-        {
-            return (Direction == TradeDirectionType.LONG && TrailingStopLossLevel1Price >= lastBar.High) ||
-            (Direction == TradeDirectionType.SHORT && TrailingStopLossLevel1Price <= lastBar.Low);
+        
+        private bool WasReachPriceLevel(Bar lastBar, double priceLevel, bool up){
+            return up ? priceLevel >= lastBar.High : priceLevel <= lastBar.Low;
         }
         
-           
-        private bool WasReachedSeventyPercentAfterReachingEntryPrice(Bar lastBar)
-        {
-            return (Direction == TradeDirectionType.LONG && TrailingStopLossLevel2Price >= lastBar.High) ||
-            (Direction == TradeDirectionType.SHORT && TrailingStopLossLevel2Price <= lastBar.Low);
-        }
-        
-        private bool WasReachProfitTarget(Bar lastBar)
-        {
-            return (Direction == TradeDirectionType.LONG && TakeProfitPrice >= lastBar.Low) ||
-            (Direction == TradeDirectionType.SHORT && TakeProfitPrice <= lastBar.High);
-        }
-        
-        private bool WasReachBeforeEntryPrice(Bar lastBar)
-        {
-            return (Direction == TradeDirectionType.LONG && BeforeEntryPrice >= lastBar.Low) ||
-            (Direction == TradeDirectionType.SHORT && BeforeEntryPrice <= lastBar.High);
-        }
-        
-        private bool WasReachProfitTargetAfterBeforeEntryPrice(Bar lastBar)
-        {
-            return (Direction == TradeDirectionType.LONG && TakeProfitPrice <= lastBar.High) ||
-            (Direction == TradeDirectionType.SHORT && TakeProfitPrice >= lastBar.Low);
-        }
-
-        private void SetStopLossToEightyPercent()
-        {
-            foreach (var order in PendingOrders)
+        private void SetStopLoss(double pips){
+            var position = Positions.FirstOrDefault(pos => TradeId.SequenceEqual(pos.Comment));
+            
+            if (position == null)
             {
-                if (order.Id == PendingOrderId)
-                {
-                    double eightyPercentStopLossPriceInPips = (Math.Abs(EightyPercentStopLossPrice)/Symbol.PipSize);
-                    order.ModifyStopLossPips(eightyPercentStopLossPriceInPips);
-                }
+                Print("Error: Position with TradeId: {0} does not exists.", TradeId);
+                return;
             }
-        }
-        
-           
-        private void SetStopLossToEntryPrice()
-        {
-            foreach (var order in PendingOrders)
-            {
-                if (order.Id == PendingOrderId)
-                {
-                    order.ModifyStopLossPips(0);
-                }
-            }
+            
+            position.ModifyStopLossPips(pips);
         }
         
         private TradeResult PlaceLimitOrder()
@@ -290,10 +290,10 @@ namespace cAlgo.Robots
            double volumeInUnits = Amount;
            double limitPrice = EntryPrice;
            string label = "";
-           double stopLossPips = (Math.Abs(Move)/Symbol.PipSize);
-           double takeProfitPips = (Math.Abs(Move)/Symbol.PipSize);
+           double stopLossPips = StopLossPips;
+           double takeProfitPips = TakeProfitPips;
            DateTime? expiryTime = null;
-           string comment = "";
+           string comment = TradeId;
            bool hasTrailingStop = false;
            StopTriggerMethod stopLossTriggerMethod = StopTriggerMethod.Trade;
 
@@ -302,14 +302,15 @@ namespace cAlgo.Robots
         }
         
         private void CancelLimitOrder()
-        {
-            foreach (var order in PendingOrders)
+        {     
+            var orderToCancel = PendingOrders.FirstOrDefault(order => order.Id == PendingOrderId);
+            if (orderToCancel == null)
             {
-                if (order.Id == PendingOrderId)
-                {
-                    CancelPendingOrder(order);
-                }
+                Print("Error: Pending order with id {0} does not exists.", PendingOrderId);
+                return;
             }
+            
+            CancelPendingOrder(orderToCancel);
         }
         
         private int CountOpenTrades()
@@ -317,17 +318,6 @@ namespace cAlgo.Robots
             return Positions.Count + PendingOrders.Count;
         }
         
-        private bool IsPendingOrderActive()
-        {
-            foreach(var order in PendingOrders)
-            {
-                if (order.Id == PendingOrderId)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
         
         private ArrayList ValidateInputs()
         {
@@ -372,6 +362,10 @@ namespace cAlgo.Robots
             {
                 errMessages.Add(String.Format("WARNING: ExpirationDateString must contains valid date in format YYYY/MM/DD example 2000/01/01: [ExpirationDateString: {0}]", ExpirationDateString));
             }
+            
+            //TODO: Lucka >0 and <1
+            //TrailingStopLossLevel1Percentage
+            //TrailingStopLossLevel2Percentage
             
             return errMessages;
         }
