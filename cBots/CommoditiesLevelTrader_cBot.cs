@@ -295,10 +295,10 @@ namespace cAlgo.Robots
            DateTime? expiryTime = null;
            string comment = "";
            bool hasTrailingStop = false;
-           
-           
+           StopTriggerMethod stopLossTriggerMethod = StopTriggerMethod.Trade;
+
            return  PlaceLimitOrder(orderTradeType, symbolName, volumeInUnits, limitPrice, label, stopLossPips, takeProfitPips,
-           expiryTime, comment, hasTrailingStop);
+           expiryTime, comment, hasTrailingStop, stopLossTriggerMethod);
         }
         
         private void CancelLimitOrder()
