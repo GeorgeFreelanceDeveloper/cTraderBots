@@ -98,7 +98,15 @@ namespace cAlgo.Robots
             Print("Start CommoditiesLevelTrader_cBot");
 
             Print("User defined properties:);
-            //TODO: Lucka
+            Print(String.Format("EntryPrice: {0}", EntryPrice));
+            Print(String.Format("StopLossPrice: {0}", StopLossPrice));
+            Print(String.Format("Direction: {0}", Direction));
+            Print(String.Format("RiskPerTrade: {0}", RiskPerTrade));
+            Print(String.Format("TrailingStopLossLevel1Percentage: {0}", TrailingStopLossLevel1Percentage));
+            Print(String.Format("TrailingStopLossLevel2Percentage: {0}", TrailingStopLossLevel2Percentage));
+            Print(String.Format("PlaceTradeDelayInMinutes: {0}", PlaceTradeDelayInMinutes));
+            Print(String.Format("MaxAllowedOpenTrades: {0}", MaxAllowedOpenTrades));
+            Print(String.Format("ExpirationDateString: {0}", ExpirationDateString));
             
             Print("Validation inputs ...");
             var inputErrorMessages = ValidateInputs();
