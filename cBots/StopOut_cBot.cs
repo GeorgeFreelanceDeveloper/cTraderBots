@@ -97,16 +97,28 @@ namespace cAlgo.Robots
 
             if (weeklyPnL < MaxWeeklyDrawDownAmount)
             {
-                Print("Weekly loss limit reached. [weeklyPnL: {0}, MaxDailyDrawDownAmount: {1}]", weeklyPnL, MaxWeeklyDrawDownAmount);
+                Print("Weekly loss limit reached. [weeklyPnL: {0}, MaxWeeklyDrawDownAmount: {1}]", weeklyPnL, MaxWeeklyDrawDownAmount);
                 Print("Start close all pending orders and positions");
                 CloseAllPositionsAndPendingOrders();
                 return;
             }
 
-            //TODO: Lucka check monthly and overall PnL
+            if (monthlyPnL < MaxMonthlyDrawDownAmount)
+            {
+                Print("Monthly loss limit reached. [monthlyPnL: {0}, MaxMonthlyDrawDownAmount: {1}]", monthlyPnL, MaxMonthlyDrawDownAmount);
+                Print("Start close all pending orders and positions");
+                CloseAllPositionsAndPendingOrders();
+                return;
+            }
 
-
-
+            if (overallPnL < MaxDrawDownAmount)
+            {
+                Print("Max drawdown limit reached. [overallPnL: {0}, MaxDrawDownAmount: {1}]", overallPnL, MaxDrawDownAmount);
+                Print("Start close all pending orders and positions");
+                CloseAllPositionsAndPendingOrders();
+                return;
+            }
+            
             Print("Finished check sufficient equity for trading");
         }
 
