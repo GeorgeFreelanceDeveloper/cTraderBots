@@ -33,6 +33,15 @@ namespace cAlgo.Robots
         
         [Parameter(DefaultValue = 10)]
         public double RiskPerTrade {get; set;}
+
+        [Parameter(DefaultValue = 0.5)]
+        public double TrailingStopLossLevel1Percentage {get; set;}
+
+        [Parameter(DefaultValue = 0.7)]
+        public double TrailingStopLossLevel2Percentage {get; set;}
+
+        [Parameter(DefaultValue = 0.8)]
+        public double EighyPercentageFromStopLoss {get; set;}
         
         [Parameter(DefaultValue = 60)]
         public int PlaceTradeDelayInMinutes {get; set;}
@@ -51,6 +60,10 @@ namespace cAlgo.Robots
         private double BeforeEntryPrice {get; set;}
         
         private double TakeProfitPrice {get; set;}
+
+        private double TrailingStopLossLevel1Price {get; set;}
+
+        private double TrailingStopLossLevel2Price {get; set;}
         
         private double Move {get; set;}
         
@@ -67,6 +80,10 @@ namespace cAlgo.Robots
         private DateTime ReachBeforeEntryPriceTimestamp {get; set;}
         
         private bool ReachProfitTargetAfterBeforeEntryPrice {get; set;}
+
+        private bool ReachedEntryPrice {get; set;}
+
+        private bool ReachedFiftyPercetAfterEntry {get; set;}
         
         private int PendingOrderId {get; set;}
         
@@ -98,8 +115,11 @@ namespace cAlgo.Robots
             TakeProfitPrice = EntryPrice + Move;
             double AmountRaw = RiskPerTrade / ((Math.Abs(Move)/Symbol.PipSize)*Symbol.PipValue);
             Amount = ((int)(AmountRaw / Symbol.VolumeInUnitsStep)) * Symbol.VolumeInUnitsStep;
-            BeforeEntryPrice = EntryPrice + ((EntryPrice - StopLossPrice) * PercentageBeforeEntry);
+            BeforeEntryPrice = EntryPrice + (Move * PercentageBeforeEntry);
+            TrailingStopLossLevel1Price = EntryPrice + (Move * TrailingStopLossLevel1Percentage);
+            TrailingStopLossLevel2Price = EntryPrice + (Move * TrailingStopLossLevel2Percentage);
             ExpirationDate = ExpirationDateString == String.Empty ? null : DateTime.Parse(ExpirationDateString);
+            EightyPercentStopLossPrice = EntryPrice + ((TakeProfitPrice - EntryPrice) * EighyPercentageFromStopLoss);
             
             Print("Compute properties:");
             Print(String.Format("Move: {0}", Move));
@@ -109,6 +129,8 @@ namespace cAlgo.Robots
             Print(String.Format("Amount: {0}", Amount));
             Print(String.Format("Amount: {0} lots", Symbol.VolumeInUnitsToQuantity(Amount)));
             Print(String.Format("BeforeEntryPrice: {0}", BeforeEntryPrice));
+            Print(String.Format("TrailingStopLossLevel1Price: {0}", TrailingStopLossLevel1Price));
+            Print(String.Format("TrailingStopLossLevel2Price: {0}", TrailingStopLossLevel2Price));
             Print(String.Format("ExpirationDate: {0}", ExpirationDate));
             
             var errMessages = ValidateComputeValues();
@@ -182,8 +204,20 @@ namespace cAlgo.Robots
             if (ReachBeforeEntryPrice && !IsPendingOrderActive())
             {
                 Print("Pending order was activate.");
-                Stop();
-                return;
+                ReachedEntryPrice = true;
+            }
+
+            if (ReachedEntryPrice && WasReachedFiftyPercentAfterReachingEntryPrice(lastBar))
+            {
+                Print("Price reach fifty percent after hiting entry price.");
+                ReachedFiftyPercetAfterEntry = true;
+                SetStopLossToEightyPercent();
+            }
+
+              if (ReachedEntryPrice && ReachedFiftyPercetAfterEntry && WasReachedSeventyPercentAfterReachingEntryPrice(lastBar))
+            {
+                Print("Price reach seventy percent after hiting entry price.");
+                SetStopLossToEntryPrice();
             }
 
             Print("Finished onBar step");
@@ -192,6 +226,19 @@ namespace cAlgo.Robots
         protected override void OnStop()
         {
             Print("Finished CommoditiesLevelTrader_cBot");
+        }
+
+          private bool WasReachedFiftyPercentAfterReachingEntryPrice(Bar lastBar)
+        {
+            return (Direction == TradeDirectionType.LONG && TrailingStopLossLevel1Price >= lastBar.High) ||
+            (Direction == TradeDirectionType.SHORT && TrailingStopLossLevel1Price <= lastBar.Low);
+        }
+        
+           
+        private bool WasReachedSeventyPercentAfterReachingEntryPrice(Bar lastBar)
+        {
+            return (Direction == TradeDirectionType.LONG && TrailingStopLossLevel2Price >= lastBar.High) ||
+            (Direction == TradeDirectionType.SHORT && TrailingStopLossLevel2Price <= lastBar.Low);
         }
         
         private bool WasReachProfitTarget(Bar lastBar)
@@ -211,6 +258,30 @@ namespace cAlgo.Robots
             return (Direction == TradeDirectionType.LONG && TakeProfitPrice <= lastBar.High) ||
             (Direction == TradeDirectionType.SHORT && TakeProfitPrice >= lastBar.Low);
         }
+
+        private void SetStopLossToEightyPercent()
+        {
+            foreach (var order in PendingOrders)
+            {
+                if (order.Id == PendingOrderId)
+                {
+                    double eightyPercentStopLossPriceInPips = (Math.Abs(EightyPercentStopLossPrice)/Symbol.PipSize);
+                    order.ModifyStopLossPips(eightyPercentStopLossPriceInPips);
+                }
+            }
+        }
+        
+           
+        private void SetStopLossToEntryPrice()
+        {
+            foreach (var order in PendingOrders)
+            {
+                if (order.Id == PendingOrderId)
+                {
+                    order.ModifyStopLossPips(0);
+                }
+            }
+        }
         
         private TradeResult PlaceLimitOrder()
         {
@@ -223,12 +294,11 @@ namespace cAlgo.Robots
            double takeProfitPips = (Math.Abs(Move)/Symbol.PipSize);
            DateTime? expiryTime = null;
            string comment = "";
-           bool hasTrailingStop = true;
-           StopTriggerMethod stopLossTriggerMethod = StopTriggerMethod.Trade;
+           bool hasTrailingStop = false;
            
            
            return  PlaceLimitOrder(orderTradeType, symbolName, volumeInUnits, limitPrice, label, stopLossPips, takeProfitPips,
-           expiryTime, comment, hasTrailingStop, stopLossTriggerMethod);
+           expiryTime, comment, hasTrailingStop);
         }
         
         private void CancelLimitOrder()
