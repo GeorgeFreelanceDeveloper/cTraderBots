@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 using System.Text;
 using cAlgo.API;
@@ -37,7 +38,7 @@ namespace cAlgo.Robots
         public int MaxMonthlyDrawDownMultiplier { get; set; }
 
         [Parameter(DefaultValue = 10)]
-        public int MaxyDrawDownMultiplier { get; set; }
+        public int MaxDrawDownMultiplier { get; set; }
 
         // Computed properties
         private double MaxDailyDrawDownAmount { get; set; }
@@ -51,20 +52,29 @@ namespace cAlgo.Robots
 
         protected override void OnStart()
         {
-            Print("Start CommoditiesLevelTrader_cBot");
-
+            Print("Start StopOut_cBot");
+            
             Print("User defined properties:");
             Print("RiskPerTrade: {0}", RiskPerTrade);
             Print("MaxDailyDrawDownMultiplier: {0}", MaxDailyDrawDownMultiplier);
             Print("MaxWeeklyDrawDownMultiplier: {0}", MaxWeeklyDrawDownMultiplier);
             Print("MaxMonthlyDrawDownMultiplier: {0}", MaxMonthlyDrawDownMultiplier);
-            Print("MaxyDrawDownMultiplier: {0}", MaxyDrawDownMultiplier);
+            Print("MaxDrawDownMultiplier: {0}", MaxDrawDownMultiplier);
+            
+            Print("Validation of User defined properties ...");
+            List<String> inputErrorMessages = ValidateInputs();
+            inputErrorMessages.ForEach(m => Print(m));
+            if (inputErrorMessages.Any()){
+                Print("App contains input validation errors and will be stop.");
+                Stop();
+                return;
+            }
 
             Print("Compute properties ...");
             MaxDailyDrawDownAmount = MaxDailyDrawDownMultiplier * RiskPerTrade * -1;
             MaxWeeklyDrawDownAmount = MaxWeeklyDrawDownMultiplier * RiskPerTrade * -1;
             MaxMonthlyDrawDownAmount = MaxMonthlyDrawDownMultiplier * RiskPerTrade * -1;
-            MaxDrawDownAmount = MaxyDrawDownMultiplier * RiskPerTrade * -1;
+            MaxDrawDownAmount = MaxDrawDownMultiplier * RiskPerTrade * -1;
 
             Print("Computed properties:");
             Print("MaxDailyDrawDownAmount: {0}", MaxDailyDrawDownAmount);
@@ -75,7 +85,7 @@ namespace cAlgo.Robots
 
         protected override void OnBar()
         {
-            Print("Start check sufficient equity for trading");
+            Print("Start to check if there is sufficient equity for trading");
             
             var dailyPnL = ComputeDailyPnL();
             var weeklyPnL = ComputeWeeklyPnL();
@@ -132,7 +142,7 @@ namespace cAlgo.Robots
             LocalStorage.SetObject("MaxMonthlyDrawDownReach",false, LocalStorageScope.Device);
             LocalStorage.SetObject("MaxDrawDownAmount",false, LocalStorageScope.Device);
             
-            Print("Finished check sufficient equity for trading");
+            Print("Finished to check if there is sufficient equity for trading");
         }
 
         private void CloseAllPositionsAndPendingOrders()
@@ -171,10 +181,42 @@ namespace cAlgo.Robots
             return History.Sum(trade => trade.NetProfit);
         }
 
-
         protected override void OnStop()
         {
-            Print("Finished CommoditiesLevelTrader_cBot");
+            Print("Finished StopOut_cBot");
         }
+        
+        private List<String> ValidateInputs()
+        {
+            var errMessages = new List<String>();
+            
+            if (RiskPerTrade <= 0)
+            {
+                errMessages.Add(String.Format("WARNING: RiskPerTrade must be greater than 0. [RiskPerTrade: {0}]", RiskPerTrade));
+            }
+            
+            if (MaxDailyDrawDownMultiplier <= 0)
+            {
+                errMessages.Add(String.Format("WARNING: MaxDailyDrawDownMultiplier must be greater than 0. [MaxDailyDrawDownMultiplier: {0}]", MaxDailyDrawDownMultiplier));
+            }
+            
+            if (MaxWeeklyDrawDownMultiplier <= 0)
+            {
+                 errMessages.Add(String.Format("WARNING: MaxWeeklyDrawDownMultiplier must be greater than 0. [MaxWeeklyDrawDownMultiplier: {0}]", MaxWeeklyDrawDownMultiplier));
+            }
+            
+            if (MaxMonthlyDrawDownMultiplier <= 0)
+            {
+                errMessages.Add(String.Format("WARNING: MaxMonthlyDrawDownMultiplier must be greater than 0. [MaxMonthlyDrawDownMultiplier: {0}]", MaxMonthlyDrawDownMultiplier));
+            }
+
+            if (MaxDrawDownMultiplier <= 0)
+            {
+                errMessages.Add(String.Format("WARNING: MaxDrawDownMultiplier must be greater than 0. [MaxDrawDownMultiplier: {0}]", MaxDrawDownMultiplier));
+            }
+            
+            return errMessages;
+        }
+        
     }
 }
