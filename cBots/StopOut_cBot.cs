@@ -87,6 +87,7 @@ namespace cAlgo.Robots
                 Print("Daily loss limit reached. [dailyPnL: {0}, MaxDailyDrawDownAmount: {1}]", dailyPnL, MaxDailyDrawDownAmount);
                 Print("Start close all pending orders and positions");
                 CloseAllPositionsAndPendingOrders();
+                LocalStorage.SetObject("MaxDailyDrawDownReach",true, LocalStorageScope.Device);
                 return;
             }
 
@@ -95,6 +96,7 @@ namespace cAlgo.Robots
                 Print("Weekly loss limit reached. [weeklyPnL: {0}, MaxWeeklyDrawDownAmount: {1}]", weeklyPnL, MaxWeeklyDrawDownAmount);
                 Print("Start close all pending orders and positions");
                 CloseAllPositionsAndPendingOrders();
+                LocalStorage.SetObject("MaxWeeklyDrawDownReach",true, LocalStorageScope.Device);
                 return;
             }
 
@@ -103,6 +105,7 @@ namespace cAlgo.Robots
                 Print("Monthly loss limit reached. [monthlyPnL: {0}, MaxMonthlyDrawDownAmount: {1}]", monthlyPnL, MaxMonthlyDrawDownAmount);
                 Print("Start close all pending orders and positions");
                 CloseAllPositionsAndPendingOrders();
+                LocalStorage.SetObject("MaxMonthlyDrawDownReach",true, LocalStorageScope.Device);
                 return;
             }
 
@@ -111,6 +114,7 @@ namespace cAlgo.Robots
                 Print("Max drawdown limit reached. [overallPnL: {0}, MaxDrawDownAmount: {1}]", overallPnL, MaxDrawDownAmount);
                 Print("Start close all pending orders and positions");
                 CloseAllPositionsAndPendingOrders();
+                LocalStorage.SetObject("MaxDrawDownReach",true, LocalStorageScope.Device);
                 return;
             }
 
@@ -122,6 +126,11 @@ namespace cAlgo.Robots
                 Print("Monthly PnL: {0}", monthlyPnL);    
                 Print("Overall PnL: {0}", overallPnL);
             }
+            
+            LocalStorage.SetObject("MaxDailyDrawDownReach",false, LocalStorageScope.Device);
+            LocalStorage.SetObject("MaxWeeklyDrawDownReach",false, LocalStorageScope.Device);
+            LocalStorage.SetObject("MaxMonthlyDrawDownReach",false, LocalStorageScope.Device);
+            LocalStorage.SetObject("MaxDrawDownAmount",false, LocalStorageScope.Device);
             
             Print("Finished check sufficient equity for trading");
         }
