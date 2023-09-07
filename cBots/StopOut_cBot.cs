@@ -14,7 +14,7 @@ Description: Bot for checking daily, weekly, monthly and overall PnL when PnL is
 Author: GeorgeQuantAnalyst
 CreateDate: 15.5.2023
 UpdateDate: 1.9.2023
-Version: 1.1.0-SNAPSHOT
+Version: 1.1.0
 */
 
 namespace cAlgo.Robots
