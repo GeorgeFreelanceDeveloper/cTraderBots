@@ -10,7 +10,7 @@ using cAlgo.API.Internals;
 
 /*
 Name: StopOut_cBot
-Description: Bot checking for sufficient equity for trading, if the equity falls below the set daily, weekly, monthly and all limits, all positions and pending orders will be terminated.
+Description: Bot for checking daily, weekly, monthly and overall PnL when PnL is above defined limits and if PnL is below defined limits, bot will close all pending orders and positions.
 Author: GeorgeQuantAnalyst
 Date: 15.5.2023
 Update: 1.9.2023
@@ -45,6 +45,9 @@ namespace cAlgo.Robots
         private double MaxMonthlyDrawDownAmount { get; set; }
         private double MaxDrawDownAmount { get; set; }
 
+        //Constants
+        private readonly bool enableTrace = false;
+
 
         protected override void OnStart()
         {
@@ -68,14 +71,6 @@ namespace cAlgo.Robots
             Print("MaxWeeklyDrawDownAmount: {0}", MaxWeeklyDrawDownAmount);
             Print("MaxMonthlyDrawDownAmount: {0}", MaxMonthlyDrawDownAmount);
             Print("MaxDrawDownAmount: {0}", MaxDrawDownAmount);
-
-            Print("PnLs:");
-            Print(History.Sum(x=>x.NetProfit));
-            Print("Daily PnL: {0}", ComputeDailyPnL());
-            Print("Weekly PnL: {0}", ComputeWeeklyPnL());
-            Print("Monthly PnL: {0}", ComputeMonthlyPnL());    
-            Print("Overall PnL: {0}", ComputeOverallPnL());
-            
         }
 
         protected override void OnBar()
@@ -118,6 +113,15 @@ namespace cAlgo.Robots
                 CloseAllPositionsAndPendingOrders();
                 return;
             }
+
+            if(enableTrace)
+            {
+                Print("PnLs:");
+                Print("Daily PnL: {0}", dailyPnL);
+                Print("Weekly PnL: {0}", weeklyPnL);
+                Print("Monthly PnL: {0}", monthlyPnL);    
+                Print("Overall PnL: {0}", overallPnL);
+            }
             
             Print("Finished check sufficient equity for trading");
         }
@@ -127,7 +131,7 @@ namespace cAlgo.Robots
             Print("Start close all pending orders and positions");
             Positions.ToList().ForEach(p => ClosePosition(p));
             PendingOrders.ToList().ForEach(o => CancelPendingOrder(o));
-            Print("Finished close all pending orders and positions");
+            Print("Finished close all positions and pending orders");
         }
 
         private double ComputeDailyPnL()
