@@ -11,10 +11,10 @@ using System.Text.RegularExpressions;
 
 /*
 Name: CommoditiesLevelTrader_cBot
-Description: An automated bot for controlling trades on commodities. The bot helps reduce risk by adjusting positions when prices move favorably, cancel pending order when trade early reaction and eliminates open orders during sudden price spikes.
+Description: An automated bot for controlling trades on commodities. The bot helps reduce risk by adjusting positions when prices move favorably, cancel pending order when trade early reaction and eliminates open positions during sudden price spikes.
 Author: GeorgeQuantAnalyst
-Date: 1.8.2023
-Update: 1.9.2023
+CreateDate: 1.8.2023
+UpdateDate: 1.9.2023
 Version: 1.1.0
 */
 namespace cAlgo.Robots
@@ -57,7 +57,8 @@ namespace cAlgo.Robots
         // Constants
         private Regex ExpirationDatePattern = new Regex(@"^\d{4}/\d{2}/\d{2}$");
         private readonly double PercentageBeforeEntry = 0.33;
-        
+        private readonly bool enableTrace = false;
+
         // Ids
         private int PendingOrderId {get; set;}
         private String TradeId {get; set;}
@@ -82,7 +83,6 @@ namespace cAlgo.Robots
         // States
         private bool ReachProfitTarget {get; set;}
         private bool ReachBeforeEntryPrice {get; set;}
-        private bool ReachProfitTargetAfterBeforeEntryPrice {get; set;}
         private bool ReachTrailingStopLossLevel1Price {get; set;}
         private bool ReachTrailingStopLossLevel2Price {get; set;}
         private bool IsActivePosition {get; set;}
@@ -97,7 +97,7 @@ namespace cAlgo.Robots
         {
             Print("Start CommoditiesLevelTrader_cBot");
 
-            Print("User defined properties:);
+            Print("User defined properties:");
             Print(String.Format("EntryPrice: {0}", EntryPrice));
             Print(String.Format("StopLossPrice: {0}", StopLossPrice));
             Print(String.Format("Direction: {0}", Direction));
@@ -108,20 +108,16 @@ namespace cAlgo.Robots
             Print(String.Format("MaxAllowedOpenTrades: {0}", MaxAllowedOpenTrades));
             Print(String.Format("ExpirationDateString: {0}", ExpirationDateString));
             
-            Print("Validation inputs ...");
-            var inputErrorMessages = ValidateInputs();
-            if(inputErrorMessages.Count > 0)
-            {
-                Print("Validation input parameter errors:");
-                foreach (var message in inputErrorMessages)
-                {
-                    Print(message);
-                }
+            Print("Validation of User defined properties ...");
+            List<String> inputErrorMessages = ValidateInputs();
+            inputErrorMessages.ForEach(m => Print(m));
+            if (inputErrorMessages.Any()){
+                Print("App contains input validation errors and will be stop.");
                 Stop();
                 return;
             }
 
-            Print("Compute properties ... ")
+            Print("Compute properties ... ");
             TradeId = System.Guid.NewGuid().ToString();
             Move = EntryPrice - StopLossPrice;
             TakeProfitPrice = EntryPrice + Move;
@@ -156,15 +152,12 @@ namespace cAlgo.Robots
             Print(String.Format("TakeProfitPips: {0}", TakeProfitPips));
             Print(String.Format("ExpirationDate: {0}", ExpirationDate));
 
-            Print("Validate computed properties");
+            Print("Validate of computed properties");
             var errMessages = ValidateComputeValues();
-            if(errMessages.Count > 0)
+            errMessages.ForEach(m=>Print(m));
+            if (errMessages.Any())
             {
-                Print("Validation compute values errors:");
-                foreach (var message in errMessages)
-                {
-                    Print(message);
-                }
+                Print("App contains compute values validation errors and will be stop.");
                 Stop();
                 return;
             }
@@ -255,6 +248,15 @@ namespace cAlgo.Robots
                 return;
             }
             
+            if(enableTrace)
+            {
+                Print(String.Format("ReachProfitTarget: {0}", ReachProfitTarget));
+                Print(String.Format("ReachBeforeEntryPrice: {0}", ReachBeforeEntryPrice));
+                Print(String.Format("IsActivePosition: {0}",IsActivePosition));
+                Print(String.Format("ReachTrailingStopLossLevel1Price: {0}", ReachTrailingStopLossLevel1Price));
+                Print(String.Format("ReachTrailingStopLossLevel2Price: {0}", ReachTrailingStopLossLevel2Price));
+            }
+            
             Print("Finished onBar step");
         }
         
@@ -284,7 +286,7 @@ namespace cAlgo.Robots
         }
         
         private bool WasReachPriceLevel(Bar lastBar, double priceLevel, bool up){
-            return up ? priceLevel >= lastBar.High : priceLevel <= lastBar.Low;
+            return up ? lastBar.High >= priceLevel : lastBar.Low <= priceLevel;
         }
         
         private void SetStopLoss(double pips){
@@ -335,9 +337,9 @@ namespace cAlgo.Robots
         }
         
         
-        private ArrayList ValidateInputs()
+        private List<String> ValidateInputs()
         {
-            var errMessages = new ArrayList();
+            var errMessages = new List<String>();
             
             if (EntryPrice <= 0)
             {
@@ -391,10 +393,9 @@ namespace cAlgo.Robots
             return errMessages;
         }
         
-        private ArrayList ValidateComputeValues()
+        private List<String> ValidateComputeValues()
         {
-             var errMessages = new ArrayList();
-             
+            var errMessages = new List<String>();
              
             if (Amount < Symbol.VolumeInUnitsMin)
             {
@@ -406,7 +407,7 @@ namespace cAlgo.Robots
                 errMessages.Add(String.Format("WARNING: Trade volume is greater than maximum tradable amount: [Amount: {0}, MaxTradableAmount: {1}]", Amount, Symbol.VolumeInUnitsMax));
             }
              
-             return errMessages;
+            return errMessages;
         }
     }
 }
