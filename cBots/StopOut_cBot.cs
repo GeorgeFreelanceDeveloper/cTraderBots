@@ -12,8 +12,8 @@ using cAlgo.API.Internals;
 Name: StopOut_cBot
 Description: Bot for checking daily, weekly, monthly and overall PnL when PnL is above defined limits and if PnL is below defined limits, bot will close all pending orders and positions.
 Author: GeorgeQuantAnalyst
-Date: 15.5.2023
-Update: 1.9.2023
+CreateDate: 15.5.2023
+UpdateDate: 1.9.2023
 Version: 1.1.0-SNAPSHOT
 */
 
