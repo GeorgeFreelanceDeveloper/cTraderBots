@@ -71,9 +71,9 @@ namespace cAlgo.Robots
         private double TrailingStopLossLevel1Price {get; set;}
         private double TrailingStopLossLevel2Price {get; set;}
         private double StopLossPips {get; set;}
-        private double StopLossLevel1Pips {get; set;}
-        private double StopLossLevel2Pips {get; set;}
         private double TakeProfitPips {get; set;}
+        private double StopLossLevel1Price {get; set;}
+        private double StopLossLevel2Price {get; set; }
         
         // Timestamps
         private DateTime? ExpirationDate {get; set;}
@@ -126,8 +126,8 @@ namespace cAlgo.Robots
             BeforeEntryPrice = EntryPrice + (Move * PercentageBeforeEntry);
             
             StopLossPips = (Math.Abs(Move)/Symbol.PipSize);
-            StopLossLevel1Pips = StopLossLevel1Pips * 0.8;
-            StopLossLevel2Pips = 0;
+            StopLossLevel1Price = EntryPrice - (Move * 0.8);
+            StopLossLevel2Price = EntryPrice;
             
             TakeProfitPips = (Math.Abs(Move)/Symbol.PipSize);
             
@@ -147,8 +147,8 @@ namespace cAlgo.Robots
             Print(String.Format("TrailingStopLossLevel1Price: {0}", TrailingStopLossLevel1Price));
             Print(String.Format("TrailingStopLossLevel2Price: {0}", TrailingStopLossLevel2Price));
             Print(String.Format("StopLossPips: {0}", StopLossPips));
-            Print(String.Format("StopLossLevel1Pips: {0}", StopLossLevel1Pips));
-            Print(String.Format("StopLossLevel2Pips: {0}", StopLossLevel2Pips));
+            Print(String.Format("StopLossLevel1Price: {0}", StopLossLevel1Price));
+            Print(String.Format("StopLossLevel2Price: {0}", StopLossLevel2Price));
             Print(String.Format("TakeProfitPips: {0}", TakeProfitPips));
             Print(String.Format("ExpirationDate: {0}", ExpirationDate));
 
@@ -232,7 +232,7 @@ namespace cAlgo.Robots
             {
                 Print("Price reach TrailingStopLossLevel1Price.");
                 ReachTrailingStopLossLevel1Price = true;
-                SetStopLoss(StopLossLevel1Pips);
+                SetStopLoss(StopLossLevel1Price);
                 return;
             }
 
@@ -243,7 +243,7 @@ namespace cAlgo.Robots
             {
                 Print("Price reach TrailingStopLossLevel2Price.");
                 ReachTrailingStopLossLevel2Price = true;
-                SetStopLoss(StopLossLevel2Pips);
+                SetStopLoss(StopLossLevel2Price);
                 Stop();
                 return;
             }
@@ -289,7 +289,7 @@ namespace cAlgo.Robots
             return up ? lastBar.High >= priceLevel : lastBar.Low <= priceLevel;
         }
         
-        private void SetStopLoss(double pips){
+        private void SetStopLoss(double price){
             var position = Positions.FirstOrDefault(pos => TradeId.SequenceEqual(pos.Comment));
             
             if (position == null)
@@ -298,7 +298,7 @@ namespace cAlgo.Robots
                 return;
             }
             
-            position.ModifyStopLossPips(pips);
+            position.ModifyStopLossPrice(price);
         }
         
         private TradeResult PlaceLimitOrder()
@@ -406,7 +406,7 @@ namespace cAlgo.Robots
             {
                 errMessages.Add(String.Format("WARNING: Trade volume is greater than maximum tradable amount: [Amount: {0}, MaxTradableAmount: {1}]", Amount, Symbol.VolumeInUnitsMax));
             }
-
+            
             double amountInAccountCurrency = Amount * Symbol.LotSize;
             if (amountInAccountCurrency > Account.Balance)
             {
