@@ -275,8 +275,9 @@ namespace cAlgo.Robots
         {
             var pos = args.Position;
             if(TradeId.SequenceEqual(pos.Comment)){
-                 Print("Position closed with {0} profit", pos.GrossProfit);
-                 Stop();
+                string profitLossMessage = pos.GrossProfit >= 0 ? "profit" : "loss";   
+                Print("Position closed with {0} {1}", pos.GrossProfit, profitLossMessage);
+                Stop();
             }
         }
 
