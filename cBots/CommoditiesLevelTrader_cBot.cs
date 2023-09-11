@@ -406,6 +406,12 @@ namespace cAlgo.Robots
             {
                 errMessages.Add(String.Format("WARNING: Trade volume is greater than maximum tradable amount: [Amount: {0}, MaxTradableAmount: {1}]", Amount, Symbol.VolumeInUnitsMax));
             }
+
+            double amountInAccountCurrency = Amount * Symbol.LotSize;
+            if (amountInAccountCurrency > Account.Balance)
+            {
+                errMessages.Add(String.Format("WARNING: Trade volume in account currency is greater that account balance: [AmountInAccountCurrency: {0}, AccountBalance: {1}]", amountInAccountCurrency, Account.Balance));
+            }
              
             return errMessages;
         }
