@@ -11,16 +11,19 @@ using System.Text.RegularExpressions;
 
 /*
 Name: CommoditiesLevelTrader_cBot
-Description: An automated bot for controlling trades on commodities. The bot helps reduce risk by adjusting positions when prices move favorably, cancel pending order when trade early reaction and eliminates open orders during sudden price spikes.
+Description: An automated bot for controlling trades on commodities. The bot helps reduce risk by adjusting positions when prices move favorably, cancel pending order when trade early reaction and eliminates open positions during sudden price spikes.
 Author: GeorgeQuantAnalyst
-Date: 1.8.2023
-Version: 1.0.1
+CreateDate: 1.8.2023
+UpdateDate: 1.9.2023
+Version: 1.1.0
 */
 namespace cAlgo.Robots
 {
     [Robot(AccessRights = AccessRights.None)]
     public class CommoditiesLevelTrader_cBot : Robot
     {
+        
+        // User defined properties
         
         [Parameter(DefaultValue = 0)]
         public double EntryPrice {get; set;}
@@ -33,6 +36,12 @@ namespace cAlgo.Robots
         
         [Parameter(DefaultValue = 10)]
         public double RiskPerTrade {get; set;}
+
+        [Parameter(DefaultValue = 0.5)]
+        public double TrailingStopLossLevel1Percentage {get; set;}
+
+        [Parameter(DefaultValue = 0.7)]
+        public double TrailingStopLossLevel2Percentage {get; set;}
         
         [Parameter(DefaultValue = 60)]
         public int PlaceTradeDelayInMinutes {get; set;}
@@ -44,34 +53,40 @@ namespace cAlgo.Robots
         [Parameter(DefaultValue = "")]
         public string ExpirationDateString {get; set;}
         
+        
+        // Constants
         private Regex ExpirationDatePattern = new Regex(@"^\d{4}/\d{2}/\d{2}$");
-        
         private readonly double PercentageBeforeEntry = 0.33;
+        private readonly bool enableTrace = false;
+
+        // Ids
+        private int PendingOrderId {get; set;}
+        private String TradeId {get; set;}
         
-        private double BeforeEntryPrice {get; set;}
-        
-        private double TakeProfitPrice {get; set;}
-        
+        // Computed properties
         private double Move {get; set;}
-        
         private double Amount {get; set;}
+        private double BeforeEntryPrice {get; set;}
+        private double TakeProfitPrice {get; set;}
+        private double TrailingStopLossLevel1Price {get; set;}
+        private double TrailingStopLossLevel2Price {get; set;}
+        private double StopLossPips {get; set;}
+        private double TakeProfitPips {get; set;}
+        private double StopLossLevel1Price {get; set;}
+        private double StopLossLevel2Price {get; set; }
         
+        // Timestamps
         private DateTime? ExpirationDate {get; set;}
-        
-        private bool ReachProfitTarget {get; set;}
-        
         private DateTime ReachProfitTargetTimestamp {get; set;}
-        
-        private bool ReachBeforeEntryPrice {get; set;}
-        
         private DateTime ReachBeforeEntryPriceTimestamp {get; set;}
         
-        private bool ReachProfitTargetAfterBeforeEntryPrice {get; set;}
-        
-        private int PendingOrderId {get; set;}
-        
-
-        
+        // States
+        private bool ReachProfitTarget {get; set;}
+        private bool ReachBeforeEntryPrice {get; set;}
+        private bool ReachTrailingStopLossLevel1Price {get; set;}
+        private bool ReachTrailingStopLossLevel2Price {get; set;}
+        private bool IsActivePosition {get; set;}
+              
         public enum TradeDirectionType
         {
             LONG,
@@ -81,27 +96,47 @@ namespace cAlgo.Robots
         protected override void OnStart()
         {
             Print("Start CommoditiesLevelTrader_cBot");
+
+            Print("User defined properties:");
+            Print(String.Format("EntryPrice: {0}", EntryPrice));
+            Print(String.Format("StopLossPrice: {0}", StopLossPrice));
+            Print(String.Format("Direction: {0}", Direction));
+            Print(String.Format("RiskPerTrade: {0}", RiskPerTrade));
+            Print(String.Format("TrailingStopLossLevel1Percentage: {0}", TrailingStopLossLevel1Percentage));
+            Print(String.Format("TrailingStopLossLevel2Percentage: {0}", TrailingStopLossLevel2Percentage));
+            Print(String.Format("PlaceTradeDelayInMinutes: {0}", PlaceTradeDelayInMinutes));
+            Print(String.Format("MaxAllowedOpenTrades: {0}", MaxAllowedOpenTrades));
+            Print(String.Format("ExpirationDateString: {0}", ExpirationDateString));
             
-            var inputErrorMessages = ValidateInputs();
-            if(inputErrorMessages.Count > 0)
-            {
-                Print("Validation input parameter errors:");
-                foreach (var message in inputErrorMessages)
-                {
-                    Print(message);
-                }
+            Print("Validation of User defined properties ...");
+            List<String> inputErrorMessages = ValidateInputs();
+            inputErrorMessages.ForEach(m => Print(m));
+            if (inputErrorMessages.Any()){
+                Print("App contains input validation errors and will be stop.");
                 Stop();
                 return;
             }
 
+            Print("Compute properties ... ");
+            TradeId = System.Guid.NewGuid().ToString();
             Move = EntryPrice - StopLossPrice;
             TakeProfitPrice = EntryPrice + Move;
             double AmountRaw = RiskPerTrade / ((Math.Abs(Move)/Symbol.PipSize)*Symbol.PipValue);
             Amount = ((int)(AmountRaw / Symbol.VolumeInUnitsStep)) * Symbol.VolumeInUnitsStep;
-            BeforeEntryPrice = EntryPrice + ((EntryPrice - StopLossPrice) * PercentageBeforeEntry);
+            BeforeEntryPrice = EntryPrice + (Move * PercentageBeforeEntry);
+            
+            StopLossPips = (Math.Abs(Move)/Symbol.PipSize);
+            StopLossLevel1Price = EntryPrice - (Move * 0.8);
+            StopLossLevel2Price = EntryPrice;
+            
+            TakeProfitPips = (Math.Abs(Move)/Symbol.PipSize);
+            
+            TrailingStopLossLevel1Price = EntryPrice + (Move * TrailingStopLossLevel1Percentage);
+            TrailingStopLossLevel2Price = EntryPrice + (Move * TrailingStopLossLevel2Percentage);
             ExpirationDate = ExpirationDateString == String.Empty ? null : DateTime.Parse(ExpirationDateString);
             
-            Print("Compute properties:");
+            Print("Computed properties:");
+            Print(String.Format("TradeId: {0}", TradeId));
             Print(String.Format("Move: {0}", Move));
             Print(String.Format("Take profit price: {0}", TakeProfitPrice));
             Print(String.Format("Amount raw: {0}", AmountRaw));
@@ -109,19 +144,27 @@ namespace cAlgo.Robots
             Print(String.Format("Amount: {0}", Amount));
             Print(String.Format("Amount: {0} lots", Symbol.VolumeInUnitsToQuantity(Amount)));
             Print(String.Format("BeforeEntryPrice: {0}", BeforeEntryPrice));
+            Print(String.Format("TrailingStopLossLevel1Price: {0}", TrailingStopLossLevel1Price));
+            Print(String.Format("TrailingStopLossLevel2Price: {0}", TrailingStopLossLevel2Price));
+            Print(String.Format("StopLossPips: {0}", StopLossPips));
+            Print(String.Format("StopLossLevel1Price: {0}", StopLossLevel1Price));
+            Print(String.Format("StopLossLevel2Price: {0}", StopLossLevel2Price));
+            Print(String.Format("TakeProfitPips: {0}", TakeProfitPips));
             Print(String.Format("ExpirationDate: {0}", ExpirationDate));
-            
+
+            Print("Validate of computed properties");
             var errMessages = ValidateComputeValues();
-            if(errMessages.Count > 0)
+            errMessages.ForEach(m=>Print(m));
+            if (errMessages.Any())
             {
-                Print("Validation compute values errors:");
-                foreach (var message in errMessages)
-                {
-                    Print(message);
-                }
+                Print("App contains compute values validation errors and will be stop.");
                 Stop();
                 return;
             }
+            
+            Print("Register listeners");
+            Positions.Opened += PositionsOnOpened;
+            Positions.Closed += PositionsOnClosed;
         }
 
         protected override void OnBar()
@@ -138,14 +181,17 @@ namespace cAlgo.Robots
             
             Bar lastBar = MarketData.GetBars(TimeFrame.Minute, Symbol.Name).Last();
             
-            if (!ReachProfitTarget && WasReachProfitTarget(lastBar))
+            if (!ReachProfitTarget && 
+                WasReachPriceLevel(lastBar, TakeProfitPrice, Direction==TradeDirectionType.SHORT))
             {
                 Print("Price reach ProfitTargetPrice.");
                 ReachProfitTarget = true;
                 ReachProfitTargetTimestamp = DateTime.Now;
             }
             
-            if (ReachProfitTarget && !ReachBeforeEntryPrice && WasReachBeforeEntryPrice(lastBar))
+            if (ReachProfitTarget && 
+                !ReachBeforeEntryPrice &&
+                WasReachPriceLevel(lastBar, BeforeEntryPrice, Direction==TradeDirectionType.SHORT))
             {
                 Print("Price reach beforeEntryPrice.");
                 ReachBeforeEntryPrice = true;
@@ -170,7 +216,8 @@ namespace cAlgo.Robots
                 PendingOrderId = result.PendingOrder.Id;
             }
             
-            if (ReachBeforeEntryPrice && WasReachProfitTargetAfterBeforeEntryPrice(lastBar))
+            if (ReachBeforeEntryPrice &&
+                WasReachPriceLevel(lastBar, TakeProfitPrice, Direction == TradeDirectionType.LONG))
             {
                 Print("Price reach profit target after hit beforeEntryPrice.");
                 Print("Cancel pending order if exist.");
@@ -178,15 +225,60 @@ namespace cAlgo.Robots
                 Stop();
                 return;
             }
-            
-            if (ReachBeforeEntryPrice && !IsPendingOrderActive())
+
+            if (IsActivePosition && 
+                !ReachTrailingStopLossLevel1Price && 
+                WasReachPriceLevel(lastBar, TrailingStopLossLevel1Price, Direction == TradeDirectionType.LONG ))
             {
-                Print("Pending order was activate.");
-                Stop();
+                Print("Price reach TrailingStopLossLevel1Price.");
+                ReachTrailingStopLossLevel1Price = true;
+                SetStopLoss(StopLossLevel1Price);
                 return;
             }
 
+             if (IsActivePosition && 
+                 !ReachTrailingStopLossLevel2Price && 
+                  ReachTrailingStopLossLevel1Price && 
+                  WasReachPriceLevel(lastBar, TrailingStopLossLevel2Price, Direction == TradeDirectionType.LONG))
+            {
+                Print("Price reach TrailingStopLossLevel2Price.");
+                ReachTrailingStopLossLevel2Price = true;
+                SetStopLoss(StopLossLevel2Price);
+                Stop();
+                return;
+            }
+            
+            if(enableTrace)
+            {
+                Print(String.Format("ReachProfitTarget: {0}", ReachProfitTarget));
+                Print(String.Format("ReachBeforeEntryPrice: {0}", ReachBeforeEntryPrice));
+                Print(String.Format("IsActivePosition: {0}",IsActivePosition));
+                Print(String.Format("ReachTrailingStopLossLevel1Price: {0}", ReachTrailingStopLossLevel1Price));
+                Print(String.Format("ReachTrailingStopLossLevel2Price: {0}", ReachTrailingStopLossLevel2Price));
+            }
+            
             Print("Finished onBar step");
+        }
+        
+        private void PositionsOnOpened(PositionOpenedEventArgs args)
+        {
+            var pos = args.Position;
+            if (TradeId.SequenceEqual(pos.Comment)){
+                 Print("Pending order was converted to position.");
+                 Print("Position opened at {0}", pos.EntryPrice);
+                 IsActivePosition = true;
+            }
+
+        }
+        
+        private void PositionsOnClosed(PositionClosedEventArgs args)
+        {
+            var pos = args.Position;
+            if(TradeId.SequenceEqual(pos.Comment)){
+                string profitLossMessage = pos.GrossProfit >= 0 ? "profit" : "loss";   
+                Print("Position closed with {0} {1}", pos.GrossProfit, profitLossMessage);
+                Stop();
+            }
         }
 
         protected override void OnStop()
@@ -194,22 +286,20 @@ namespace cAlgo.Robots
             Print("Finished CommoditiesLevelTrader_cBot");
         }
         
-        private bool WasReachProfitTarget(Bar lastBar)
-        {
-            return (Direction == TradeDirectionType.LONG && TakeProfitPrice >= lastBar.Low) ||
-            (Direction == TradeDirectionType.SHORT && TakeProfitPrice <= lastBar.High);
+        private bool WasReachPriceLevel(Bar lastBar, double priceLevel, bool up){
+            return up ? lastBar.High >= priceLevel : lastBar.Low <= priceLevel;
         }
         
-        private bool WasReachBeforeEntryPrice(Bar lastBar)
-        {
-            return (Direction == TradeDirectionType.LONG && BeforeEntryPrice >= lastBar.Low) ||
-            (Direction == TradeDirectionType.SHORT && BeforeEntryPrice <= lastBar.High);
-        }
-        
-        private bool WasReachProfitTargetAfterBeforeEntryPrice(Bar lastBar)
-        {
-            return (Direction == TradeDirectionType.LONG && TakeProfitPrice <= lastBar.High) ||
-            (Direction == TradeDirectionType.SHORT && TakeProfitPrice >= lastBar.Low);
+        private void SetStopLoss(double price){
+            var position = Positions.FirstOrDefault(pos => TradeId.SequenceEqual(pos.Comment));
+            
+            if (position == null)
+            {
+                Print("Error: Position with TradeId: {0} does not exists.", TradeId);
+                return;
+            }
+            
+            position.ModifyStopLossPrice(price);
         }
         
         private TradeResult PlaceLimitOrder()
@@ -219,27 +309,27 @@ namespace cAlgo.Robots
            double volumeInUnits = Amount;
            double limitPrice = EntryPrice;
            string label = "";
-           double stopLossPips = (Math.Abs(Move)/Symbol.PipSize);
-           double takeProfitPips = (Math.Abs(Move)/Symbol.PipSize);
+           double stopLossPips = StopLossPips;
+           double takeProfitPips = TakeProfitPips;
            DateTime? expiryTime = null;
-           string comment = "";
-           bool hasTrailingStop = true;
+           string comment = TradeId;
+           bool hasTrailingStop = false;
            StopTriggerMethod stopLossTriggerMethod = StopTriggerMethod.Trade;
-           
-           
+
            return  PlaceLimitOrder(orderTradeType, symbolName, volumeInUnits, limitPrice, label, stopLossPips, takeProfitPips,
            expiryTime, comment, hasTrailingStop, stopLossTriggerMethod);
         }
         
         private void CancelLimitOrder()
-        {
-            foreach (var order in PendingOrders)
+        {     
+            var orderToCancel = PendingOrders.FirstOrDefault(order => order.Id == PendingOrderId);
+            if (orderToCancel == null)
             {
-                if (order.Id == PendingOrderId)
-                {
-                    CancelPendingOrder(order);
-                }
+                Print("Error: Pending order with id {0} does not exists.", PendingOrderId);
+                return;
             }
+            
+            CancelPendingOrder(orderToCancel);
         }
         
         private int CountOpenTrades()
@@ -247,21 +337,10 @@ namespace cAlgo.Robots
             return Positions.Count + PendingOrders.Count;
         }
         
-        private bool IsPendingOrderActive()
-        {
-            foreach(var order in PendingOrders)
-            {
-                if (order.Id == PendingOrderId)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
         
-        private ArrayList ValidateInputs()
+        private List<String> ValidateInputs()
         {
-            var errMessages = new ArrayList();
+            var errMessages = new List<String>();
             
             if (EntryPrice <= 0)
             {
@@ -302,14 +381,22 @@ namespace cAlgo.Robots
             {
                 errMessages.Add(String.Format("WARNING: ExpirationDateString must contains valid date in format YYYY/MM/DD example 2000/01/01: [ExpirationDateString: {0}]", ExpirationDateString));
             }
-            
+
+            if (TrailingStopLossLevel1Percentage <= 0.0 && TrailingStopLossLevel1Percentage >= 1.0)
+            {
+                errMessages.Add(String.Format("WARNING: TrailingStopLossLevel1Percentage must be between 0.0 and 1.0 (0 => 0%, 1 => 100%). [TrailingStopLossLevel1Percentage: {0}]", TrailingStopLossLevel1Percentage));
+            }
+
+            if (TrailingStopLossLevel2Percentage <= 0.0 && TrailingStopLossLevel2Percentage >= 1.0)
+            {
+                errMessages.Add(String.Format("WARNING: TrailingStopLossLevel2Percentage must be between 0.0 and 1.0 (0 => 0%, 1 => 100%). [TrailingStopLossLevel2Percentage: {0}]", TrailingStopLossLevel2Percentage));
+            }
             return errMessages;
         }
         
-        private ArrayList ValidateComputeValues()
+        private List<String> ValidateComputeValues()
         {
-             var errMessages = new ArrayList();
-             
+            var errMessages = new List<String>();
              
             if (Amount < Symbol.VolumeInUnitsMin)
             {
@@ -320,8 +407,14 @@ namespace cAlgo.Robots
             {
                 errMessages.Add(String.Format("WARNING: Trade volume is greater than maximum tradable amount: [Amount: {0}, MaxTradableAmount: {1}]", Amount, Symbol.VolumeInUnitsMax));
             }
+            
+            double amountInAccountCurrency = Amount * Symbol.LotSize;
+            if (amountInAccountCurrency > Account.Balance)
+            {
+                errMessages.Add(String.Format("WARNING: Trade volume in account currency is greater that account balance: [AmountInAccountCurrency: {0}, AccountBalance: {1}]", amountInAccountCurrency, Account.Balance));
+            }
              
-             return errMessages;
+            return errMessages;
         }
     }
 }
