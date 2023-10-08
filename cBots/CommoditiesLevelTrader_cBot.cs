@@ -14,8 +14,8 @@ Name: CommoditiesLevelTrader_cBot
 Description: An automated bot for controlling trades on commodities. The bot helps reduce risk by adjusting positions when prices move favorably, cancel pending order when trade early reaction and eliminates open positions during sudden price spikes.
 Author: GeorgeQuantAnalyst
 CreateDate: 1.8.2023
-UpdateDate: 1.9.2023
-Version: 1.1.0
+UpdateDate: 8.10.2023
+Version: 1.1.1
 */
 namespace cAlgo.Robots
 {
@@ -247,6 +247,18 @@ namespace cAlgo.Robots
                 Stop();
                 return;
             }
+            
+            if (!IsActivePosition){
+                foreach (Position pos in Positions)
+                {
+                    if (TradeId.SequenceEqual(pos.Comment)){
+                        Print("Pending order was converted to position.");
+                        Print("Position opened at {0}", pos.EntryPrice);
+                        IsActivePosition = true;
+                    }
+                 }
+            }
+            
             
             if(enableTrace)
             {
