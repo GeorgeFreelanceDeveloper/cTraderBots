@@ -15,7 +15,7 @@ Description: An automated bot for controlling trades on commodities. The bot hel
 Author: GeorgeQuantAnalyst
 CreateDate: 1.8.2023
 UpdateDate: 8.10.2023
-Version: 1.1.1
+Version: 1.1.2
 */
 namespace cAlgo.Robots
 {
@@ -244,7 +244,6 @@ namespace cAlgo.Robots
                 Print("Price reach TrailingStopLossLevel2Price.");
                 ReachTrailingStopLossLevel2Price = true;
                 SetStopLoss(StopLossLevel2Price);
-                Stop();
                 return;
             }
             
