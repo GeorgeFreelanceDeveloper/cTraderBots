@@ -14,8 +14,8 @@ Name: CommoditiesLevelTrader_cBot
 Description: An automated bot for controlling trades on commodities. The bot helps reduce risk by adjusting positions when prices move favorably, cancel pending order when trade early reaction and eliminates open positions during sudden price spikes.
 Author: GeorgeQuantAnalyst
 CreateDate: 1.8.2023
-UpdateDate: 1.9.2023
-Version: 1.1.0
+UpdateDate: 8.10.2023
+Version: 1.1.3
 */
 namespace cAlgo.Robots
 {
@@ -244,9 +244,20 @@ namespace cAlgo.Robots
                 Print("Price reach TrailingStopLossLevel2Price.");
                 ReachTrailingStopLossLevel2Price = true;
                 SetStopLoss(StopLossLevel2Price);
-                Stop();
                 return;
             }
+            
+            if (!IsActivePosition){
+                foreach (Position pos in Positions)
+                {
+                    if (TradeId.SequenceEqual(pos.Comment)){
+                        Print("Pending order was converted to position.");
+                        Print("Position opened at {0}", pos.EntryPrice);
+                        IsActivePosition = true;
+                    }
+                 }
+            }
+            
             
             if(enableTrace)
             {
@@ -409,7 +420,8 @@ namespace cAlgo.Robots
             }
             
             double amountInAccountCurrency = Amount * Symbol.LotSize;
-            if (amountInAccountCurrency > Account.Balance)
+            var firstTier = Symbol.DynamicLeverage[0];
+            if (amountInAccountCurrency/firstTier.Leverage > Account.Balance)
             {
                 errMessages.Add(String.Format("WARNING: Trade volume in account currency is greater that account balance: [AmountInAccountCurrency: {0}, AccountBalance: {1}]", amountInAccountCurrency, Account.Balance));
             }
