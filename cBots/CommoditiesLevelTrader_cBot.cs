@@ -15,7 +15,7 @@ Description: An automated bot for controlling trades on commodities. The bot hel
 Author: GeorgeQuantAnalyst
 CreateDate: 1.8.2023
 UpdateDate: 8.10.2023
-Version: 1.1.3
+Version: 1.1.4
 */
 namespace cAlgo.Robots
 {
@@ -419,12 +419,12 @@ namespace cAlgo.Robots
                 errMessages.Add(String.Format("WARNING: Trade volume is greater than maximum tradable amount: [Amount: {0}, MaxTradableAmount: {1}]", Amount, Symbol.VolumeInUnitsMax));
             }
             
-            double amountInAccountCurrency = Amount * EntryPrice;
             var firstTier = Symbol.DynamicLeverage[0];
-            Print(String.Format("AmountInAccountCurrency: {0}", amountInAccountCurrency));
-            if (amountInAccountCurrency/firstTier.Leverage > Account.Balance)
+            double amountInAccountCurrency = Amount * EntryPrice;
+            double expectedMargin = amountInAccountCurrency/firstTier.Leverage;
+            if (expectedMargin > Account.Balance)
             {
-                errMessages.Add(String.Format("WARNING: Trade volume in account currency is greater that account balance: [AmountInAccountCurrency: {0}, AccountBalance: {1}]", amountInAccountCurrency, Account.Balance));
+                errMessages.Add(String.Format("WARNING: Expected margin is greater that account balance: [ExpectedMargin: {0}, AccountBalance: {1}]", expectedMargin, Account.Balance));
             }
              
             return errMessages;
