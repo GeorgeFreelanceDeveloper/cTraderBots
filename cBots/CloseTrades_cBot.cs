@@ -12,7 +12,7 @@ Name: CloseTrades_cBot
 Description: Bot closing pending orders and opened positions at defined date and time. You can set close for all trades or specific market.
 Author: LucyQuantAnalyst
 Date: 29.10.2023
-Version: 1.0.1
+Version: 1.0.2
 */
 
 namespace cAlgo.Robots
@@ -93,17 +93,17 @@ namespace cAlgo.Robots
         {
             var errMessages = new List<String>();
 
-            if (Hours < 1 && Hours > 24)
+            if (Hours < 0 || Hours > 24)
             {
-                errMessages.Add(String.Format("WARNING: Hours must be greater or equal to 1 and less or equal to 24. [Hours: {0}]", Hours));
+                errMessages.Add(String.Format("WARNING: Hours must be greater or equal to 0 and less or equal to 24. [Hours: {0}]", Hours));
             }
             
-            if (Minutes < 0 && Minutes > 60)
+            if (Minutes < 0 || Minutes > 60)
             {
-                 errMessages.Add(String.Format("WARNING: Minutes must not be less than 0 and greater then 60. [Minutes: {0}]", Minutes));
+                 errMessages.Add(String.Format("WARNING: Minutes must be greater or equal to 0 and less or equal to 60. [Minutes: {0}]", Minutes));
             }
             
-            if (Market == "")
+            if (!All && (Market == null || Market == ""))
             {
                 errMessages.Add(String.Format("WARNING: Market must be defined. [Market: {0}]", Market));
             }
