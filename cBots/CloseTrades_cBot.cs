@@ -12,7 +12,7 @@ Name: CloseTrades_cBot
 Description: Bot closing pending orders and opened positions at defined date and time. You can set close for all trades or specific market.
 Author: LucyQuantAnalyst
 Date: 29.10.2023
-Version: 1.0.0
+Version: 1.0.1
 */
 
 namespace cAlgo.Robots
@@ -40,78 +40,75 @@ namespace cAlgo.Robots
         protected override void OnStart()
         {
             Print("Start CloseTrades_cBot");
+
+            Print("User defined properties:");
+            Print(String.Format("Day: {0}", Day));
+            Print(String.Format("Hours: {0}", Hours));
+            Print(String.Format("Minutes: {0}", Minutes));
+            Print(String.Format("All: {0}", All));
+            Print(String.Format("Market: {0}", Market));
+            
+            Print("Validation of User defined properties ...");
+            List<String> inputErrorMessages = ValidateInputs();
+            inputErrorMessages.ForEach(m => Print(m));
+            if (inputErrorMessages.Any()){
+                Print("App contains input validation errors and will be stop.");
+                Stop();
+                return;
+            }
+            
+            CloseTime = new TimeOnly(Hours, Minutes);
         }
 
         protected override void OnBar()
         {
             Print("Start onBar step");
-
-            CloseTime = new TimeOnly(Hours, Minutes);
-             
-            Print("Close time: {0}", CloseTime);
-            Print("Day time now: {0}", DateTime.Now);
              
             DateTime now = DateTime.Now;
              
-            if(now.DayOfWeek == Day)
+            if(now.DayOfWeek == Day && TimeOnly.FromDateTime(now) >= CloseTime)
             {
-               
-               Print("Start closing orders and positions");
-               
-               if(TimeOnly.FromDateTime(now) >= CloseTime)
-               {
-                    if(All)
-                    {
-                        CancelOrdersAndPositionsForAllMarkets();
-                    }
-                    else
-                    {
-                        CancelOrdersAndPositions(Market);
-                    }
-               }
-               
-               Print("Finished closing orders and positions");
+               CancelOrdersAndPositions(All, Market);
             }
             
-            Print("Finished onBar step"); 
+            Print("Finished onBar step");
         }
         
-        private void CancelOrdersAndPositionsForAllMarkets()
+        private void CancelOrdersAndPositions(bool all, string market)
         {
-            Print("Cancel all orders and positions for all markets");
-            var pendingOrders = PendingOrders;
-            foreach (var order in pendingOrders)
-            {
-                CancelPendingOrder(order);
-            }
+            Print("Start closing orders and positions");
+            
+            PendingOrders.Where(order => all || order.SymbolName == market)
+                .ToList()
+                .ForEach(order => CancelPendingOrder(order));
+                
+            Positions.Where(position => all || position.SymbolName == market)
+                .ToList()
+                .ForEach(position => ClosePosition(position));
+                
+            Print("Finished closing orders and positions");     
+        }
+        
+        private List<String> ValidateInputs()
+        {
+            var errMessages = new List<String>();
 
-            var openPositions = Positions;
-            foreach (var position in openPositions)
+            if (Hours < 1 && Hours > 24)
             {
-                 ClosePosition(position);
-            }
-        }
-        
-        private void CancelOrdersAndPositions(string market)
-        {
-            Print("Cancel orders and positions for {0} market.", market);
-            var pendingOrders = PendingOrders;
-            foreach (var order in pendingOrders)
-            {
-                if (order.SymbolName.SequenceEqual(market))
-                {
-                    CancelPendingOrder(order);
-                }
+                errMessages.Add(String.Format("WARNING: Hours must be greater or equal to 1 and less or equal to 24. [Hours: {0}]", Hours));
             }
             
-            var openPositions = Positions;
-            foreach (var position in openPositions)
+            if (Minutes < 0 && Minutes > 60)
             {
-                if (position.SymbolName.SequenceEqual(market))
-                {
-                    ClosePosition(position);
-                }
+                 errMessages.Add(String.Format("WARNING: Minutes must not be less than 0 and greater then 60. [Minutes: {0}]", Minutes));
             }
-         }
+            
+            if (Market == "")
+            {
+                errMessages.Add(String.Format("WARNING: Market must be defined. [Market: {0}]", Market));
+            }
+            
+            return errMessages;
+        }
     }
 }
