@@ -11,6 +11,7 @@ Think of cBots as programs that run inside cTrader desktop and autonomously exec
 **Actively supported**
 * **CommoditiesLevelTrader_cBot**: An automated bot for controlling trades on commodities. The bot helps reduce risk by adjusting positions when prices move favorably, cancel pending order when trade early reaction and eliminates open orders during sudden price spikes.
 * **StopOut_cBot**: Bot for checking daily, weekly, monthly and overall PnL when PnL is above defined limits and if PnL is below defined limits, bot will close all pending orders and positions.
+* **CloseTrades_cBot**: Bot closing pending orders and opened positions at defined date and time. You can set close for all trades or specific market.
 
 **Old not supported**
 * **EarlyReaction_cBot**: Bot checks whether there was a reaction to the trading level earlier, if so, it cancels the given trade.
