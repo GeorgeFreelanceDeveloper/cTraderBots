@@ -62,7 +62,8 @@ namespace cAlgo.Robots
             
             Print("Compute properties ...");
             CloseTime = new TimeOnly(Hours, Minutes);
-            Print("Computed properties: CloseTime {0}", CloseTime);
+            Print("Computed properties:")
+            Print("CloseTime {0}", CloseTime);
         }
 
         protected override void OnBar()
