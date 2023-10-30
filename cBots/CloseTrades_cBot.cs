@@ -63,7 +63,7 @@ namespace cAlgo.Robots
             Print("Compute properties ...");
             CloseTime = new TimeOnly(Hours, Minutes);
 
-            Print("Computed properties:")
+            Print("Computed properties:");
             Print("CloseTime {0}", CloseTime);
         }
 
