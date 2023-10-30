@@ -12,7 +12,7 @@ Name: CloseTrades_cBot
 Description: Bot closing pending orders and opened positions at defined date and time. You can set close for all trades or specific market.
 Author: LucyQuantAnalyst
 Date: 29.10.2023
-Version: 1.0.3
+Version: 1.0.4
 */
 
 namespace cAlgo.Robots
@@ -20,6 +20,7 @@ namespace cAlgo.Robots
     [Robot(AccessRights = AccessRights.None)]
     public class CloseTrades_cBot : Robot
     {   
+        // User defined properties
         [Parameter(DefaultValue = DayOfWeek.Friday)]
         public DayOfWeek Day {get; set;}
 
@@ -35,6 +36,7 @@ namespace cAlgo.Robots
         [Parameter(DefaultValue = "Copper")]
         public string Market {get; set;}
 
+        // Constants
         private TimeOnly CloseTime {get; set;}
         
         protected override void OnStart()
@@ -58,7 +60,9 @@ namespace cAlgo.Robots
             }
             Print("Finished validation of User defined properties ...");
             
+            Print("Compute properties ...");
             CloseTime = new TimeOnly(Hours, Minutes);
+            Print("Computed properties: CloseTime {0}", CloseTime);
         }
 
         protected override void OnBar()
