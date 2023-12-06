@@ -10,17 +10,18 @@ using cAlgo.API.Internals;
 using System.Text.RegularExpressions;
 
 /*
-Name: CommoditiesLevelTrader_cBot
-Description: An automated bot for controlling trades on commodities. The bot helps reduce risk by adjusting positions when prices move favorably, cancel pending order when trade early reaction and eliminates open positions during sudden price spikes.
-Author: GeorgeQuantAnalyst
+Name: LevelTrader_cBot
+Description: An automated bot for controlling trades. The bot helps reduce risk by adjusting positions when prices move favorably, cancel pending order when trade early reaction and eliminates open positions during sudden price spikes.
+Author: GeorgeFreelanceDevelope alias in old version GeorgeQuantAnalyst
+Updated by: LucyFreelanceDeveloper alias in old version LucyQuantAnalyst
 CreateDate: 1.8.2023
-UpdateDate: 8.10.2023
-Version: 1.1.4
+UpdateDate: 6.12.2023
+Version: 1.2.0
 */
 namespace cAlgo.Robots
 {
     [Robot(AccessRights = AccessRights.None)]
-    public class CommoditiesLevelTrader_cBot : Robot
+    public class LevelTrader_cBot : Robot
     {
         
         // User defined properties
@@ -34,8 +35,14 @@ namespace cAlgo.Robots
         [Parameter("Type", DefaultValue = TradeDirectionType.LONG)]
         public TradeDirectionType Direction {get; set;}
         
-        [Parameter(DefaultValue = 10)]
-        public double RiskPerTrade {get; set;}
+        [Parameter(DefaultValue = 1.5)]
+        public double RiskRevardRatio {get; set;}
+        
+        [Parameter(DefaultValue = 5)]
+        public double RiskPercentage {get; set;}
+        
+        [Parameter(DefaultValue = false)]
+        public Boolean IsEnableTrailngStop {get; set;}
 
         [Parameter(DefaultValue = 0.5)]
         public double TrailingStopLossLevel1Percentage {get; set;}
@@ -68,6 +75,7 @@ namespace cAlgo.Robots
         private double Amount {get; set;}
         private double BeforeEntryPrice {get; set;}
         private double TakeProfitPrice {get; set;}
+        private double RiskPerTrade {get; set;}
         private double TrailingStopLossLevel1Price {get; set;}
         private double TrailingStopLossLevel2Price {get; set;}
         private double StopLossPips {get; set;}
@@ -101,7 +109,8 @@ namespace cAlgo.Robots
             Print(String.Format("EntryPrice: {0}", EntryPrice));
             Print(String.Format("StopLossPrice: {0}", StopLossPrice));
             Print(String.Format("Direction: {0}", Direction));
-            Print(String.Format("RiskPerTrade: {0}", RiskPerTrade));
+            Print(String.Format("RiskRevardRatio: {0}", RiskRevardRatio));
+            Print(String.Format("RiskPercentage: {0}", RiskPercentage));
             Print(String.Format("TrailingStopLossLevel1Percentage: {0}", TrailingStopLossLevel1Percentage));
             Print(String.Format("TrailingStopLossLevel2Percentage: {0}", TrailingStopLossLevel2Percentage));
             Print(String.Format("PlaceTradeDelayInMinutes: {0}", PlaceTradeDelayInMinutes));
@@ -121,7 +130,8 @@ namespace cAlgo.Robots
             TradeId = System.Guid.NewGuid().ToString();
             Move = EntryPrice - StopLossPrice;
             TakeProfitPrice = EntryPrice + Move;
-            double AmountRaw = RiskPerTrade / ((Math.Abs(Move)/Symbol.PipSize)*Symbol.PipValue);
+            RiskPerTrade = (RiskPercentage / 100) * Account.Balance;
+            double AmountRaw = RiskPerTrade / ((Math.Abs(Move) / Symbol.PipSize) * Symbol.PipValue);
             Amount = ((int)(AmountRaw / Symbol.VolumeInUnitsStep)) * Symbol.VolumeInUnitsStep;
             BeforeEntryPrice = EntryPrice + (Move * PercentageBeforeEntry);
             
@@ -139,6 +149,8 @@ namespace cAlgo.Robots
             Print(String.Format("TradeId: {0}", TradeId));
             Print(String.Format("Move: {0}", Move));
             Print(String.Format("Take profit price: {0}", TakeProfitPrice));
+            Print(String.Format("Account.Balance: {0}", Account.Balance));
+            Print(String.Format("RiskPerTrade: {0}", RiskPerTrade));
             Print(String.Format("Amount raw: {0}", AmountRaw));
             Print(String.Format("Min step volume: {0}", Symbol.VolumeInUnitsMin));
             Print(String.Format("Amount: {0}", Amount));
@@ -226,7 +238,7 @@ namespace cAlgo.Robots
                 return;
             }
 
-            if (IsActivePosition && 
+            if (IsActivePosition && IsEnableTrailngStop &&
                 !ReachTrailingStopLossLevel1Price && 
                 WasReachPriceLevel(lastBar, TrailingStopLossLevel1Price, Direction == TradeDirectionType.LONG ))
             {
@@ -236,7 +248,7 @@ namespace cAlgo.Robots
                 return;
             }
 
-             if (IsActivePosition && 
+             if (IsActivePosition && IsEnableTrailngStop &&
                  !ReachTrailingStopLossLevel2Price && 
                   ReachTrailingStopLossLevel1Price && 
                   WasReachPriceLevel(lastBar, TrailingStopLossLevel2Price, Direction == TradeDirectionType.LONG))
@@ -321,7 +333,7 @@ namespace cAlgo.Robots
            double limitPrice = EntryPrice;
            string label = "";
            double stopLossPips = StopLossPips;
-           double takeProfitPips = TakeProfitPips;
+           double takeProfitPips = TakeProfitPips * RiskRevardRatio;
            DateTime? expiryTime = null;
            string comment = TradeId;
            bool hasTrailingStop = false;
@@ -363,9 +375,14 @@ namespace cAlgo.Robots
                 errMessages.Add(String.Format("WARNING: StopLossPrice must be greater than 0. [StopLossPrice: {0}]", StopLossPrice));
             }
             
-            if (RiskPerTrade <= 0)
+            if (RiskRevardRatio < 1)
             {
-                 errMessages.Add(String.Format("WARNING: RiskPerTrade must be greater than 0. [RiskPerTrade: {0}]", RiskPerTrade));
+                errMessages.Add(String.Format("WARNING: RiskRevardRatio must be greater or equal 1. [RiskRevardRatio: {0}]", RiskRevardRatio));
+            }
+            
+            if (RiskPercentage <= 0)
+            {
+                 errMessages.Add(String.Format("WARNING: RiskPercentage must be greater than 0. [RiskPercentage: {0}]", RiskPercentage));
             }
             
             if (PlaceTradeDelayInMinutes < 0)
