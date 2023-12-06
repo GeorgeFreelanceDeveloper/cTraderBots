@@ -9,7 +9,7 @@ Think of cBots as programs that run inside cTrader desktop and autonomously exec
 
 ## Developed cBots
 **Actively supported**
-* **CommoditiesLevelTrader_cBot**: An automated bot for controlling trades on commodities. The bot helps reduce risk by adjusting positions when prices move favorably, cancel pending order when trade early reaction and eliminates open orders during sudden price spikes.
+* **LevelTrader_cBot**: An automated bot for controlling trades. The bot helps reduce risk by adjusting positions when prices move favorably, cancel pending order when trade early reaction and eliminates open orders during sudden price spikes.
 * **StopOut_cBot**: Bot for checking daily, weekly, monthly and overall PnL when PnL is above defined limits and if PnL is below defined limits, bot will close all pending orders and positions.
 * **CloseTrades_cBot**: Bot closing pending orders and opened positions at defined date and time. You can set close for all trades or specific market.
 
@@ -42,7 +42,7 @@ Application is actively maintenance and develop.
 <!-- markdownlint-disable -->
 <table>
   <tr>
-     <td align="center"><a href="https://github.com/GeorgeQuantAnalyst"><img src="https://avatars.githubusercontent.com/u/112611533?v=4" width="100px;" alt=""/><br /><sub><b>GeorgeQuantAnalyst</b></sub></a><br /><a href="https://github.com/GeorgeQuantAnalyst" title="Ideas">🤔</a></td>
-    <td align="center"><a href="https://github.com/LucyQuantAnalyst"><img src="https://avatars.githubusercontent.com/u/115091833?v=4" width="100px;" alt=""/><br /><sub><b>LucyQuantAnalyst</b></sub></a><br /><a href="https://github.com/LucyQuantAnalyst" title="Code">💻</a></td>
+     <td align="center"><a href="https://github.com/GeorgeFreelanceDeveloper"><img src="https://avatars.githubusercontent.com/u/112611533?v=4" width="100px;" alt=""/><br /><sub><b>GeorgeFreelanceDeveloper</b></sub></a><br /><a href="https://github.com/GeorgeFreelanceDeveloper" title="Ideas">🤔</a></td>
+    <td align="center"><a href="https://github.com/LucyFreelanceDeveloper"><img src="https://avatars.githubusercontent.com/u/115091833?v=4" width="100px;" alt=""/><br /><sub><b>LucyFreelanceDeveloper</b></sub></a><br /><a href="https://github.com/LucyFreelanceDeveloper" title="Code">💻</a></td>
   </tr>
 </table>
