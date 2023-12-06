@@ -140,7 +140,7 @@ namespace cAlgo.Robots
             StopLossLevel1Price = EntryPrice - (Move * 0.8);
             StopLossLevel2Price = EntryPrice;
             
-            TakeProfitPips = (Math.Abs(Move)/Symbol.PipSize);
+            TakeProfitPips = ((Math.Abs(Move)/Symbol.PipSize)) * RiskRevardRatio;
             
             TrailingStopLossLevel1Price = EntryPrice + (Move * TrailingStopLossLevel1Percentage);
             TrailingStopLossLevel2Price = EntryPrice + (Move * TrailingStopLossLevel2Percentage);
@@ -162,7 +162,7 @@ namespace cAlgo.Robots
             Print(String.Format("StopLossPips: {0}", StopLossPips));
             Print(String.Format("StopLossLevel1Price: {0}", StopLossLevel1Price));
             Print(String.Format("StopLossLevel2Price: {0}", StopLossLevel2Price));
-            Print(String.Format("TakeProfitPips: {0}", TakeProfitPips)); // RRR 1:1
+            Print(String.Format("TakeProfitPips: {0}", TakeProfitPips));
             Print(String.Format("ExpirationDate: {0}", ExpirationDate));
 
             Print("Validate of computed properties");
@@ -334,7 +334,7 @@ namespace cAlgo.Robots
            double limitPrice = EntryPrice;
            string label = "";
            double stopLossPips = StopLossPips;
-           double takeProfitPips = TakeProfitPips * RiskRevardRatio;
+           double takeProfitPips = TakeProfitPips;
            DateTime? expiryTime = null;
            string comment = TradeId;
            bool hasTrailingStop = false;
