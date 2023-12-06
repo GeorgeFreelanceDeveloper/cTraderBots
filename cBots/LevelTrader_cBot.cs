@@ -162,7 +162,7 @@ namespace cAlgo.Robots
             Print(String.Format("StopLossPips: {0}", StopLossPips));
             Print(String.Format("StopLossLevel1Price: {0}", StopLossLevel1Price));
             Print(String.Format("StopLossLevel2Price: {0}", StopLossLevel2Price));
-            Print(String.Format("TakeProfitPips: {0}", TakeProfitPips));
+            Print(String.Format("TakeProfitPips: {0}", TakeProfitPips)); // RRR 1:1
             Print(String.Format("ExpirationDate: {0}", ExpirationDate));
 
             Print("Validate of computed properties");
