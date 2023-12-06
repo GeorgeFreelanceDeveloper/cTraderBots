@@ -42,7 +42,7 @@ namespace cAlgo.Robots
         public double RiskPercentage {get; set;}
         
         [Parameter(DefaultValue = false)]
-        public Boolean IsEnableTrailngStop {get; set;}
+        public Boolean IsEnableTrailingStop {get; set;}
 
         [Parameter(DefaultValue = 0.5)]
         public double TrailingStopLossLevel1Percentage {get; set;}
@@ -111,7 +111,7 @@ namespace cAlgo.Robots
             Print(String.Format("Direction: {0}", Direction));
             Print(String.Format("RiskRevardRatio: {0}", RiskRevardRatio));
             Print(String.Format("RiskPercentage: {0}", RiskPercentage));
-            Print(String.Format("IsEnableTrailngStop: {0}, IsEnableTrailngStop"));
+            Print(String.Format("IsEnableTrailingStop: {0}, IsEnableTrailingStop"));
             Print(String.Format("TrailingStopLossLevel1Percentage: {0}", TrailingStopLossLevel1Percentage));
             Print(String.Format("TrailingStopLossLevel2Percentage: {0}", TrailingStopLossLevel2Percentage));
             Print(String.Format("PlaceTradeDelayInMinutes: {0}", PlaceTradeDelayInMinutes));
@@ -239,7 +239,7 @@ namespace cAlgo.Robots
                 return;
             }
 
-            if (IsActivePosition && IsEnableTrailngStop &&
+            if (IsActivePosition && IsEnableTrailingStop &&
                 !ReachTrailingStopLossLevel1Price && 
                 WasReachPriceLevel(lastBar, TrailingStopLossLevel1Price, Direction == TradeDirectionType.LONG ))
             {
@@ -249,7 +249,7 @@ namespace cAlgo.Robots
                 return;
             }
 
-             if (IsActivePosition && IsEnableTrailngStop &&
+             if (IsActivePosition && IsEnableTrailingStop &&
                  !ReachTrailingStopLossLevel2Price && 
                   ReachTrailingStopLossLevel1Price && 
                   WasReachPriceLevel(lastBar, TrailingStopLossLevel2Price, Direction == TradeDirectionType.LONG))
