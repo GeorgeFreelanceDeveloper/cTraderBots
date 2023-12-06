@@ -281,7 +281,7 @@ namespace cAlgo.Robots
                 Print(String.Format("ReachTrailingStopLossLevel2Price: {0}", ReachTrailingStopLossLevel2Price));
             }
             
-            Print("Finished onBar step");
+            Print(String.Format("Finished onBar step at time: {0}", DateTime.Now));
         }
         
         private void PositionsOnOpened(PositionOpenedEventArgs args)
