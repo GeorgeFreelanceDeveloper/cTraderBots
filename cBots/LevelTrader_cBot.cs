@@ -111,6 +111,7 @@ namespace cAlgo.Robots
             Print(String.Format("Direction: {0}", Direction));
             Print(String.Format("RiskRevardRatio: {0}", RiskRevardRatio));
             Print(String.Format("RiskPercentage: {0}", RiskPercentage));
+            Print(String.Format("IsEnableTrailngStop: {0}, IsEnableTrailngStop"));
             Print(String.Format("TrailingStopLossLevel1Percentage: {0}", TrailingStopLossLevel1Percentage));
             Print(String.Format("TrailingStopLossLevel2Percentage: {0}", TrailingStopLossLevel2Percentage));
             Print(String.Format("PlaceTradeDelayInMinutes: {0}", PlaceTradeDelayInMinutes));
