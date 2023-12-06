@@ -130,7 +130,7 @@ namespace cAlgo.Robots
             Print("Compute properties ... ");
             TradeId = System.Guid.NewGuid().ToString();
             Move = EntryPrice - StopLossPrice;
-            TakeProfitPrice = EntryPrice + Move;
+            TakeProfitPrice = EntryPrice + Move; // RRR 1:1
             RiskPerTrade = (RiskPercentage / 100) * Account.Balance;
             double AmountRaw = RiskPerTrade / ((Math.Abs(Move) / Symbol.PipSize) * Symbol.PipValue);
             Amount = ((int)(AmountRaw / Symbol.VolumeInUnitsStep)) * Symbol.VolumeInUnitsStep;
@@ -149,7 +149,7 @@ namespace cAlgo.Robots
             Print("Computed properties:");
             Print(String.Format("TradeId: {0}", TradeId));
             Print(String.Format("Move: {0}", Move));
-            Print(String.Format("Take profit price: {0}", TakeProfitPrice));
+            Print(String.Format("Take profit price: {0}", TakeProfitPrice)); // RRR 1:1
             Print(String.Format("Account.Balance: {0}", Account.Balance));
             Print(String.Format("RiskPerTrade: {0}", RiskPerTrade));
             Print(String.Format("Amount raw: {0}", AmountRaw));
