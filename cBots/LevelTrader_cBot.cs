@@ -12,7 +12,7 @@ using System.Text.RegularExpressions;
 /*
 Name: LevelTrader_cBot
 Description: An automated bot for controlling trades. The bot helps reduce risk by adjusting positions when prices move favorably, cancel pending order when trade early reaction and eliminates open positions during sudden price spikes.
-Author: GeorgeFreelanceDevelope alias in old version GeorgeQuantAnalyst
+Author: GeorgeFreelanceDeveloper alias in old version GeorgeQuantAnalyst
 Updated by: LucyFreelanceDeveloper alias in old version LucyQuantAnalyst
 CreateDate: 1.8.2023
 UpdateDate: 6.12.2023
