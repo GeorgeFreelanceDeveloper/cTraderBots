@@ -14,12 +14,6 @@ Think of cBots as programs that run inside cTrader desktop and autonomously exec
 * **CloseTrades_cBot**: Bot closing pending orders and opened positions at defined date and time. You can set close for all trades or specific market.
 * **GapFinder_cBot**: Bot for finding the top 20 largest daily gaps in the selected market.
 
-**Old not supported**
-* **EarlyReaction_cBot**: Bot checks whether there was a reaction to the trading level earlier, if so, it cancels the given trade.
-* **MaxOpenPositions_cBot**: Bot controlling the maximum number of open positions, if more than allowed limit, the newer positions will be closed.
-* **CloseTradesAtTime_cBot**: Bot closing pending orders and position at defined time. You can set close for all or specific currency pairs.
-* **PlacePendingOrders_cBot (In-development)**: Bot compute profit targes, amount orders and place pending ordes to trading platform from CSV file.
-
 ## Development
 Application is actively maintenance and develop.
 
