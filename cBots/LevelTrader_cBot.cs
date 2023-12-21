@@ -16,7 +16,7 @@ Author: GeorgeFreelanceDeveloper alias in old version GeorgeQuantAnalyst
 Updated by: LucyFreelanceDeveloper alias in old version LucyQuantAnalyst
 CreateDate: 1.8.2023
 UpdateDate: 6.12.2023
-Version: 1.2.0
+Version: 1.2.1
 */
 namespace cAlgo.Robots
 {
@@ -182,7 +182,7 @@ namespace cAlgo.Robots
 
         protected override void OnBar()
         {
-            Print("Start onBar step");
+            Print(String.Format("{0} - {1} - {2}: Start onBar step", DateTime.Now, Symbol.ToString(), Direction.ToString()));
             
             if (ExpirationDate != null && DateTime.Now > ExpirationDate)
             {
@@ -280,8 +280,8 @@ namespace cAlgo.Robots
                 Print(String.Format("ReachTrailingStopLossLevel1Price: {0}", ReachTrailingStopLossLevel1Price));
                 Print(String.Format("ReachTrailingStopLossLevel2Price: {0}", ReachTrailingStopLossLevel2Price));
             }
-            
-            Print(String.Format("Finished onBar step at time: {0}", DateTime.Now));
+   
+            Print(String.Format("{0} - {1} - {2}: Finished onBar step", DateTime.Now, Symbol.ToString(), Direction.ToString()));
         }
         
         private void PositionsOnOpened(PositionOpenedEventArgs args)

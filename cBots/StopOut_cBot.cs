@@ -85,6 +85,7 @@ namespace cAlgo.Robots
 
         protected override void OnBar()
         {
+            Print(String.Format("{0}: Start onBar step", DateTime.Now));
             Print("Start to check if there is sufficient equity for trading");
             
             var dailyPnL = ComputeDailyPnL();
@@ -143,6 +144,7 @@ namespace cAlgo.Robots
             LocalStorage.SetObject("MaxDrawDownAmount",false, LocalStorageScope.Device);
             
             Print("Finished to check if there is sufficient equity for trading");
+            Print(String.Format("{0}: Finished onBar step", DateTime.Now));
         }
 
         private void CloseAllPositionsAndPendingOrders()
