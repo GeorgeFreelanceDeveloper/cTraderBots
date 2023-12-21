@@ -16,7 +16,7 @@ Author: GeorgeFreelanceDeveloper alias in old version GeorgeQuantAnalyst
 Updated by: LucyFreelanceDeveloper alias in old version LucyQuantAnalyst
 CreateDate: 1.8.2023
 UpdateDate: 6.12.2023
-Version: 1.2.1
+Version: 1.2.2
 */
 namespace cAlgo.Robots
 {
@@ -25,7 +25,6 @@ namespace cAlgo.Robots
     {
         
         // User defined properties
-        
         [Parameter(DefaultValue = 0)]
         public double EntryPrice {get; set;}
         
@@ -193,74 +192,75 @@ namespace cAlgo.Robots
             
             
             Bar lastBar = MarketData.GetBars(TimeFrame.Minute, Symbol.Name).Last();
-            
-            if (!ReachProfitTarget && 
-                WasReachPriceLevel(lastBar, TakeProfitPrice, Direction==TradeDirectionType.SHORT))
-            {
-                Print("Price reach ProfitTargetPrice.");
-                ReachProfitTarget = true;
-                ReachProfitTargetTimestamp = DateTime.Now;
-            }
-            
-            if (ReachProfitTarget && 
-                !ReachBeforeEntryPrice &&
-                WasReachPriceLevel(lastBar, BeforeEntryPrice, Direction==TradeDirectionType.SHORT))
-            {
-                Print("Price reach beforeEntryPrice.");
-                ReachBeforeEntryPrice = true;
-                ReachBeforeEntryPriceTimestamp = DateTime.Now;
 
-                if(CountOpenTrades() >= MaxAllowedOpenTrades){
-                    Print("On exchange is open max allowed trades, order do not place on exchange.");
-                    Stop();
-                    return;
-                }
-                
-                if(ReachBeforeEntryPriceTimestamp.Subtract(ReachProfitTargetTimestamp).TotalMinutes < PlaceTradeDelayInMinutes)
+            if (IsActivePosition)
+            {
+                if (IsEnableTrailingStop &&
+                    !ReachTrailingStopLossLevel1Price && 
+                    WasReachPriceLevel(lastBar, TrailingStopLossLevel1Price, Direction == TradeDirectionType.LONG ))
                 {
-                    Print("Most fast movement to level, order do not place on exchange.");
+                    Print("Price reach TrailingStopLossLevel1Price.");
+                    ReachTrailingStopLossLevel1Price = true;
+                    SetStopLoss(StopLossLevel1Price);
+                    return;
+                }
+
+                if (IsEnableTrailingStop &&
+                    !ReachTrailingStopLossLevel2Price && 
+                    ReachTrailingStopLossLevel1Price && 
+                    WasReachPriceLevel(lastBar, TrailingStopLossLevel2Price, Direction == TradeDirectionType.LONG))
+                {
+                    Print("Price reach TrailingStopLossLevel2Price.");
+                    ReachTrailingStopLossLevel2Price = true;
+                    SetStopLoss(StopLossLevel2Price);
+                    return;
+                }
+            } else 
+            {
+                if (!ReachProfitTarget && 
+                    WasReachPriceLevel(lastBar, TakeProfitPrice, Direction==TradeDirectionType.SHORT))
+                {
+                    Print("Price reach ProfitTargetPrice.");
+                    ReachProfitTarget = true;
+                    ReachProfitTargetTimestamp = DateTime.Now;
+                }
+
+                if (ReachProfitTarget && 
+                    !ReachBeforeEntryPrice &&
+                    WasReachPriceLevel(lastBar, BeforeEntryPrice, Direction==TradeDirectionType.SHORT))
+                {
+                    Print("Price reach beforeEntryPrice.");
+                    ReachBeforeEntryPrice = true;
+                    ReachBeforeEntryPriceTimestamp = DateTime.Now;
+
+                    if(CountOpenTrades() >= MaxAllowedOpenTrades){
+                        Print("On exchange is open max allowed trades, order do not place on exchange.");
+                        Stop();
+                        return;
+                    }
+                    
+                    if(ReachBeforeEntryPriceTimestamp.Subtract(ReachProfitTargetTimestamp).TotalMinutes < PlaceTradeDelayInMinutes)
+                    {
+                        Print("Most fast movement to level, order do not place on exchange.");
+                        Stop();
+                        return;
+                    }
+
+                    Print("Place limit order");
+                    TradeResult result = PlaceLimitOrder();
+                    Print(String.Format("Response PlaceLimitOrder: {0}",result));
+                    PendingOrderId = result.PendingOrder.Id;
+                }
+                if (ReachBeforeEntryPrice &&
+                    WasReachPriceLevel(lastBar, TakeProfitPrice, Direction == TradeDirectionType.LONG))
+                {
+                    Print("Price reach profit target after hit beforeEntryPrice.");
+                    Print("Cancel pending order if exist.");
+                    CancelLimitOrder();
                     Stop();
                     return;
                 }
 
-                Print("Place limit order");
-                TradeResult result = PlaceLimitOrder();
-                Print(String.Format("Response PlaceLimitOrder: {0}",result));
-                PendingOrderId = result.PendingOrder.Id;
-            }
-            
-            if (ReachBeforeEntryPrice &&
-                WasReachPriceLevel(lastBar, TakeProfitPrice, Direction == TradeDirectionType.LONG))
-            {
-                Print("Price reach profit target after hit beforeEntryPrice.");
-                Print("Cancel pending order if exist.");
-                CancelLimitOrder();
-                Stop();
-                return;
-            }
-
-            if (IsActivePosition && IsEnableTrailingStop &&
-                !ReachTrailingStopLossLevel1Price && 
-                WasReachPriceLevel(lastBar, TrailingStopLossLevel1Price, Direction == TradeDirectionType.LONG ))
-            {
-                Print("Price reach TrailingStopLossLevel1Price.");
-                ReachTrailingStopLossLevel1Price = true;
-                SetStopLoss(StopLossLevel1Price);
-                return;
-            }
-
-             if (IsActivePosition && IsEnableTrailingStop &&
-                 !ReachTrailingStopLossLevel2Price && 
-                  ReachTrailingStopLossLevel1Price && 
-                  WasReachPriceLevel(lastBar, TrailingStopLossLevel2Price, Direction == TradeDirectionType.LONG))
-            {
-                Print("Price reach TrailingStopLossLevel2Price.");
-                ReachTrailingStopLossLevel2Price = true;
-                SetStopLoss(StopLossLevel2Price);
-                return;
-            }
-            
-            if (!IsActivePosition){
                 foreach (Position pos in Positions)
                 {
                     if (TradeId.SequenceEqual(pos.Comment)){
@@ -268,9 +268,8 @@ namespace cAlgo.Robots
                         Print("Position opened at {0}", pos.EntryPrice);
                         IsActivePosition = true;
                     }
-                 }
+                }
             }
-            
             
             if(enableTrace)
             {
