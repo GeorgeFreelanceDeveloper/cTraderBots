@@ -16,7 +16,7 @@ Author: GeorgeFreelanceDeveloper alias in old version GeorgeQuantAnalyst
 Updated by: LucyFreelanceDeveloper alias in old version LucyQuantAnalyst
 CreateDate: 1.8.2023
 UpdateDate: 6.12.2023
-Version: 1.2.2
+Version: 1.2.3
 */
 namespace cAlgo.Robots
 {
@@ -73,7 +73,7 @@ namespace cAlgo.Robots
         private double Move {get; set;}
         private double Amount {get; set;}
         private double BeforeEntryPrice {get; set;}
-        private double TakeProfitPrice {get; set;}
+        private double TakeProfitPriceOneToOne {get; set;} //Risk Reward Ratio 1:1
         private double RiskPerTrade {get; set;}
         private double TrailingStopLossLevel1Price {get; set;}
         private double TrailingStopLossLevel2Price {get; set;}
@@ -88,7 +88,7 @@ namespace cAlgo.Robots
         private DateTime ReachBeforeEntryPriceTimestamp {get; set;}
         
         // States
-        private bool ReachProfitTarget {get; set;}
+        private bool ReachProfitTargetOneToOne {get; set;}
         private bool ReachBeforeEntryPrice {get; set;}
         private bool ReachTrailingStopLossLevel1Price {get; set;}
         private bool ReachTrailingStopLossLevel2Price {get; set;}
@@ -129,7 +129,7 @@ namespace cAlgo.Robots
             Print("Compute properties ... ");
             TradeId = System.Guid.NewGuid().ToString();
             Move = EntryPrice - StopLossPrice;
-            TakeProfitPrice = EntryPrice + Move; // RRR 1:1
+            TakeProfitPriceOneToOne = EntryPrice + Move;
             RiskPerTrade = (RiskPercentage / 100) * Account.Balance;
             double AmountRaw = RiskPerTrade / ((Math.Abs(Move) / Symbol.PipSize) * Symbol.PipValue);
             Amount = ((int)(AmountRaw / Symbol.VolumeInUnitsStep)) * Symbol.VolumeInUnitsStep;
@@ -148,7 +148,7 @@ namespace cAlgo.Robots
             Print("Computed properties:");
             Print(String.Format("TradeId: {0}", TradeId));
             Print(String.Format("Move: {0}", Move));
-            Print(String.Format("Take profit price: {0}", TakeProfitPrice)); // RRR 1:1
+            Print(String.Format("Take profit price RRR 1:1 : {0}", TakeProfitPriceOneToOne));
             Print(String.Format("Account.Balance: {0}", Account.Balance));
             Print(String.Format("RiskPerTrade: {0}", RiskPerTrade));
             Print(String.Format("Amount raw: {0}", AmountRaw));
@@ -217,15 +217,15 @@ namespace cAlgo.Robots
                 }
             } else 
             {
-                if (!ReachProfitTarget && 
-                    WasReachPriceLevel(lastBar, TakeProfitPrice, Direction==TradeDirectionType.SHORT))
+                if (!ReachProfitTargetOneToOne && 
+                    WasReachPriceLevel(lastBar, TakeProfitPriceOneToOne, Direction==TradeDirectionType.SHORT))
                 {
                     Print("Price reach ProfitTargetPrice.");
-                    ReachProfitTarget = true;
+                    ReachProfitTargetOneToOne = true;
                     ReachProfitTargetTimestamp = DateTime.Now;
                 }
 
-                if (ReachProfitTarget && 
+                if (ReachProfitTargetOneToOne && 
                     !ReachBeforeEntryPrice &&
                     WasReachPriceLevel(lastBar, BeforeEntryPrice, Direction==TradeDirectionType.SHORT))
                 {
@@ -251,8 +251,9 @@ namespace cAlgo.Robots
                     Print(String.Format("Response PlaceLimitOrder: {0}",result));
                     PendingOrderId = result.PendingOrder.Id;
                 }
+                
                 if (ReachBeforeEntryPrice &&
-                    WasReachPriceLevel(lastBar, TakeProfitPrice, Direction == TradeDirectionType.LONG))
+                    WasReachPriceLevel(lastBar, TakeProfitPriceOneToOne, Direction == TradeDirectionType.LONG))
                 {
                     Print("Price reach profit target after hit beforeEntryPrice.");
                     Print("Cancel pending order if exist.");
@@ -273,7 +274,7 @@ namespace cAlgo.Robots
             
             if(enableTrace)
             {
-                Print(String.Format("ReachProfitTarget: {0}", ReachProfitTarget));
+                Print(String.Format("ReachProfitTargetOneToOne: {0}", ReachProfitTargetOneToOne));
                 Print(String.Format("ReachBeforeEntryPrice: {0}", ReachBeforeEntryPrice));
                 Print(String.Format("IsActivePosition: {0}",IsActivePosition));
                 Print(String.Format("ReachTrailingStopLossLevel1Price: {0}", ReachTrailingStopLossLevel1Price));
