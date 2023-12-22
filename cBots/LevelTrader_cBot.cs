@@ -148,7 +148,7 @@ namespace cAlgo.Robots
             Print("Computed properties:");
             Print(String.Format("TradeId: {0}", TradeId));
             Print(String.Format("Move: {0}", Move));
-            Print(String.Format("Take profit price RRR 1:1 : {0}", TakeProfitPriceOneToOne));
+            Print(String.Format("TakeProfitPriceOneToOne : {0}", TakeProfitPriceOneToOne));
             Print(String.Format("Account.Balance: {0}", Account.Balance));
             Print(String.Format("RiskPerTrade: {0}", RiskPerTrade));
             Print(String.Format("Amount raw: {0}", AmountRaw));
@@ -220,7 +220,7 @@ namespace cAlgo.Robots
                 if (!ReachProfitTargetOneToOne && 
                     WasReachPriceLevel(lastBar, TakeProfitPriceOneToOne, Direction==TradeDirectionType.SHORT))
                 {
-                    Print("Price reach ProfitTargetPrice.");
+                    Print("Price reach ProfitTargetOneToOne.");
                     ReachProfitTargetOneToOne = true;
                     ReachProfitTargetTimestamp = DateTime.Now;
                 }
@@ -229,7 +229,7 @@ namespace cAlgo.Robots
                     !ReachBeforeEntryPrice &&
                     WasReachPriceLevel(lastBar, BeforeEntryPrice, Direction==TradeDirectionType.SHORT))
                 {
-                    Print("Price reach beforeEntryPrice.");
+                    Print("Price reach BeforeEntryPrice.");
                     ReachBeforeEntryPrice = true;
                     ReachBeforeEntryPriceTimestamp = DateTime.Now;
 
@@ -255,7 +255,7 @@ namespace cAlgo.Robots
                 if (ReachBeforeEntryPrice &&
                     WasReachPriceLevel(lastBar, TakeProfitPriceOneToOne, Direction == TradeDirectionType.LONG))
                 {
-                    Print("Price reach profit target after hit beforeEntryPrice.");
+                    Print("Price reach ProfitTargetOneToOne after hit BeforeEntryPrice.");
                     Print("Cancel pending order if exist.");
                     CancelLimitOrder();
                     Stop();
