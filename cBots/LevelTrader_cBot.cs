@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
 using System.Text;
+using System.IO;
 using cAlgo.API;
 using cAlgo.API.Collections;
 using cAlgo.API.Indicators;
@@ -15,12 +16,12 @@ Description: An automated bot for controlling trades. The bot helps reduce risk 
 Author: GeorgeFreelanceDeveloper alias in old version GeorgeQuantAnalyst
 Updated by: LucyFreelanceDeveloper alias in old version LucyQuantAnalyst
 CreateDate: 1.8.2023
-UpdateDate: 6.12.2023
-Version: 1.2.3
+UpdateDate: 30.12.2023
+Version: 1.2.4
 */
 namespace cAlgo.Robots
 {
-    [Robot(AccessRights = AccessRights.None)]
+    [Robot(AccessRights = AccessRights.FullAccess)]
     public class LevelTrader_cBot : Robot
     {
         
@@ -64,7 +65,10 @@ namespace cAlgo.Robots
         private Regex ExpirationDatePattern = new Regex(@"^\d{4}/\d{2}/\d{2}$");
         private readonly double PercentageBeforeEntry = 0.33;
         private readonly bool enableTrace = false;
-
+        private readonly string LogFolderPath = "c:/Logs/cBots/LevelTrader/";
+        private readonly string LogSendersAddress = "senderaddress@email.com";
+        private readonly string LogRecipientAddress = "recipientaddress@email.com";
+        
         // Ids
         private int PendingOrderId {get; set;}
         private String TradeId {get; set;}
@@ -102,31 +106,31 @@ namespace cAlgo.Robots
 
         protected override void OnStart()
         {
-            Print("Start CommoditiesLevelTrader_cBot");
+            Log("Start LevelTrader_cBot");
 
-            Print("User defined properties:");
-            Print(String.Format("EntryPrice: {0}", EntryPrice));
-            Print(String.Format("StopLossPrice: {0}", StopLossPrice));
-            Print(String.Format("Direction: {0}", Direction));
-            Print(String.Format("RiskRevardRatio: {0}", RiskRevardRatio));
-            Print(String.Format("RiskPercentage: {0}", RiskPercentage));
-            Print(String.Format("IsEnableTrailingStop: {0}", IsEnableTrailingStop));
-            Print(String.Format("TrailingStopLossLevel1Percentage: {0}", TrailingStopLossLevel1Percentage));
-            Print(String.Format("TrailingStopLossLevel2Percentage: {0}", TrailingStopLossLevel2Percentage));
-            Print(String.Format("PlaceTradeDelayInMinutes: {0}", PlaceTradeDelayInMinutes));
-            Print(String.Format("MaxAllowedOpenTrades: {0}", MaxAllowedOpenTrades));
-            Print(String.Format("ExpirationDateString: {0}", ExpirationDateString));
+            Log("User defined properties:");
+            Log(String.Format("EntryPrice: {0}", EntryPrice));
+            Log(String.Format("StopLossPrice: {0}", StopLossPrice));
+            Log(String.Format("Direction: {0}", Direction));
+            Log(String.Format("RiskRevardRatio: {0}", RiskRevardRatio));
+            Log(String.Format("RiskPercentage: {0}", RiskPercentage));
+            Log(String.Format("IsEnableTrailingStop: {0}", IsEnableTrailingStop));
+            Log(String.Format("TrailingStopLossLevel1Percentage: {0}", TrailingStopLossLevel1Percentage));
+            Log(String.Format("TrailingStopLossLevel2Percentage: {0}", TrailingStopLossLevel2Percentage));
+            Log(String.Format("PlaceTradeDelayInMinutes: {0}", PlaceTradeDelayInMinutes));
+            Log(String.Format("MaxAllowedOpenTrades: {0}", MaxAllowedOpenTrades));
+            Log(String.Format("ExpirationDateString: {0}", ExpirationDateString));
             
-            Print("Validation of User defined properties ...");
+            Log("Validation of User defined properties ...");
             List<String> inputErrorMessages = ValidateInputs();
-            inputErrorMessages.ForEach(m => Print(m));
+            inputErrorMessages.ForEach(m => Log(m));
             if (inputErrorMessages.Any()){
-                Print("App contains input validation errors and will be stop.");
+                Log("App contains input validation errors and will be stop.");
                 Stop();
                 return;
             }
 
-            Print("Compute properties ... ");
+            Log("Compute properties ... ");
             TradeId = System.Guid.NewGuid().ToString();
             Move = EntryPrice - StopLossPrice;
             TakeProfitPriceOneToOne = EntryPrice + Move;
@@ -145,47 +149,47 @@ namespace cAlgo.Robots
             TrailingStopLossLevel2Price = EntryPrice + (Move * TrailingStopLossLevel2Percentage);
             ExpirationDate = ExpirationDateString == String.Empty ? null : DateTime.Parse(ExpirationDateString);
             
-            Print("Computed properties:");
-            Print(String.Format("TradeId: {0}", TradeId));
-            Print(String.Format("Move: {0}", Move));
-            Print(String.Format("TakeProfitPriceOneToOne : {0}", TakeProfitPriceOneToOne));
-            Print(String.Format("Account.Balance: {0}", Account.Balance));
-            Print(String.Format("RiskPerTrade: {0}", RiskPerTrade));
-            Print(String.Format("Amount raw: {0}", AmountRaw));
-            Print(String.Format("Min step volume: {0}", Symbol.VolumeInUnitsMin));
-            Print(String.Format("Amount: {0}", Amount));
-            Print(String.Format("Amount: {0} lots", Symbol.VolumeInUnitsToQuantity(Amount)));
-            Print(String.Format("BeforeEntryPrice: {0}", BeforeEntryPrice));
-            Print(String.Format("TrailingStopLossLevel1Price: {0}", TrailingStopLossLevel1Price));
-            Print(String.Format("TrailingStopLossLevel2Price: {0}", TrailingStopLossLevel2Price));
-            Print(String.Format("StopLossPips: {0}", StopLossPips));
-            Print(String.Format("StopLossLevel1Price: {0}", StopLossLevel1Price));
-            Print(String.Format("StopLossLevel2Price: {0}", StopLossLevel2Price));
-            Print(String.Format("TakeProfitPips: {0}", TakeProfitPips));
-            Print(String.Format("ExpirationDate: {0}", ExpirationDate));
+            Log("Computed properties:");
+            Log(String.Format("TradeId: {0}", TradeId));
+            Log(String.Format("Move: {0}", Move));
+            Log(String.Format("TakeProfitPriceOneToOne : {0}", TakeProfitPriceOneToOne));
+            Log(String.Format("Account.Balance: {0}", Account.Balance));
+            Log(String.Format("RiskPerTrade: {0}", RiskPerTrade));
+            Log(String.Format("Amount raw: {0}", AmountRaw));
+            Log(String.Format("Min step volume: {0}", Symbol.VolumeInUnitsMin));
+            Log(String.Format("Amount: {0}", Amount));
+            Log(String.Format("Amount: {0} lots", Symbol.VolumeInUnitsToQuantity(Amount)));
+            Log(String.Format("BeforeEntryPrice: {0}", BeforeEntryPrice));
+            Log(String.Format("TrailingStopLossLevel1Price: {0}", TrailingStopLossLevel1Price));
+            Log(String.Format("TrailingStopLossLevel2Price: {0}", TrailingStopLossLevel2Price));
+            Log(String.Format("StopLossPips: {0}", StopLossPips));
+            Log(String.Format("StopLossLevel1Price: {0}", StopLossLevel1Price));
+            Log(String.Format("StopLossLevel2Price: {0}", StopLossLevel2Price));
+            Log(String.Format("TakeProfitPips: {0}", TakeProfitPips));
+            Log(String.Format("ExpirationDate: {0}", ExpirationDate));
 
-            Print("Validate of computed properties");
+            Log("Validate of computed properties");
             var errMessages = ValidateComputeValues();
-            errMessages.ForEach(m=>Print(m));
+            errMessages.ForEach(m=>Log(m));
             if (errMessages.Any())
             {
-                Print("App contains compute values validation errors and will be stop.");
+                Log("App contains compute values validation errors and will be stop.");
                 Stop();
                 return;
             }
             
-            Print("Register listeners");
+            Log("Register listeners");
             Positions.Opened += PositionsOnOpened;
             Positions.Closed += PositionsOnClosed;
         }
 
         protected override void OnBar()
         {
-            Print(String.Format("{0} - {1} - {2}: Start onBar step", DateTime.Now, Symbol.ToString(), Direction.ToString()));
+            Log("Start onBar step");
             
             if (ExpirationDate != null && DateTime.Now > ExpirationDate)
             {
-                Print("Time of trade expired, bot will stop.");
+                Log("Time of trade expired, bot will stop.");
                 Stop();
                 return;
             }
@@ -199,7 +203,7 @@ namespace cAlgo.Robots
                     !ReachTrailingStopLossLevel1Price && 
                     WasReachPriceLevel(lastBar, TrailingStopLossLevel1Price, Direction == TradeDirectionType.LONG ))
                 {
-                    Print("Price reach TrailingStopLossLevel1Price.");
+                    Log("Price reach TrailingStopLossLevel1Price.");
                     ReachTrailingStopLossLevel1Price = true;
                     SetStopLoss(StopLossLevel1Price);
                     return;
@@ -210,7 +214,7 @@ namespace cAlgo.Robots
                     ReachTrailingStopLossLevel1Price && 
                     WasReachPriceLevel(lastBar, TrailingStopLossLevel2Price, Direction == TradeDirectionType.LONG))
                 {
-                    Print("Price reach TrailingStopLossLevel2Price.");
+                    Log("Price reach TrailingStopLossLevel2Price.");
                     ReachTrailingStopLossLevel2Price = true;
                     SetStopLoss(StopLossLevel2Price);
                     return;
@@ -220,7 +224,7 @@ namespace cAlgo.Robots
                 if (!ReachProfitTargetOneToOne && 
                     WasReachPriceLevel(lastBar, TakeProfitPriceOneToOne, Direction==TradeDirectionType.SHORT))
                 {
-                    Print("Price reach ProfitTargetOneToOne.");
+                    Log("Price reach ProfitTargetOneToOne.");
                     ReachProfitTargetOneToOne = true;
                     ReachProfitTargetTimestamp = DateTime.Now;
                 }
@@ -229,34 +233,34 @@ namespace cAlgo.Robots
                     !ReachBeforeEntryPrice &&
                     WasReachPriceLevel(lastBar, BeforeEntryPrice, Direction==TradeDirectionType.SHORT))
                 {
-                    Print("Price reach BeforeEntryPrice.");
+                    Log("Price reach BeforeEntryPrice.");
                     ReachBeforeEntryPrice = true;
                     ReachBeforeEntryPriceTimestamp = DateTime.Now;
 
                     if(CountOpenTrades() >= MaxAllowedOpenTrades){
-                        Print("On exchange is open max allowed trades, order do not place on exchange.");
+                        Log("On exchange is open max allowed trades, order do not place on exchange.");
                         Stop();
                         return;
                     }
                     
                     if(ReachBeforeEntryPriceTimestamp.Subtract(ReachProfitTargetTimestamp).TotalMinutes < PlaceTradeDelayInMinutes)
                     {
-                        Print("Most fast movement to level, order do not place on exchange.");
+                        Log("Most fast movement to level, order do not place on exchange.");
                         Stop();
                         return;
                     }
 
-                    Print("Place limit order");
+                    Log("Place limit order");
                     TradeResult result = PlaceLimitOrder();
-                    Print(String.Format("Response PlaceLimitOrder: {0}",result));
+                    Log(String.Format("Response PlaceLimitOrder: {0}",result));
                     PendingOrderId = result.PendingOrder.Id;
                 }
                 
                 if (ReachBeforeEntryPrice &&
                     WasReachPriceLevel(lastBar, TakeProfitPriceOneToOne, Direction == TradeDirectionType.LONG))
                 {
-                    Print("Price reach ProfitTargetOneToOne after hit BeforeEntryPrice.");
-                    Print("Cancel pending order if exist.");
+                    Log("Price reach ProfitTargetOneToOne after hit BeforeEntryPrice.");
+                    Log("Cancel pending order if exist.");
                     CancelLimitOrder();
                     Stop();
                     return;
@@ -265,8 +269,8 @@ namespace cAlgo.Robots
                 foreach (Position pos in Positions)
                 {
                     if (TradeId.SequenceEqual(pos.Comment)){
-                        Print("Pending order was converted to position.");
-                        Print("Position opened at {0}", pos.EntryPrice);
+                        Log("Pending order was converted to position.");
+                        Log(String.Format("Position opened at {0}", pos.EntryPrice));
                         IsActivePosition = true;
                     }
                 }
@@ -274,22 +278,32 @@ namespace cAlgo.Robots
             
             if(enableTrace)
             {
-                Print(String.Format("ReachProfitTargetOneToOne: {0}", ReachProfitTargetOneToOne));
-                Print(String.Format("ReachBeforeEntryPrice: {0}", ReachBeforeEntryPrice));
-                Print(String.Format("IsActivePosition: {0}",IsActivePosition));
-                Print(String.Format("ReachTrailingStopLossLevel1Price: {0}", ReachTrailingStopLossLevel1Price));
-                Print(String.Format("ReachTrailingStopLossLevel2Price: {0}", ReachTrailingStopLossLevel2Price));
+                Log(String.Format("ReachProfitTargetOneToOne: {0}", ReachProfitTargetOneToOne));
+                Log(String.Format("ReachBeforeEntryPrice: {0}", ReachBeforeEntryPrice));
+                Log(String.Format("IsActivePosition: {0}",IsActivePosition));
+                Log(String.Format("ReachTrailingStopLossLevel1Price: {0}", ReachTrailingStopLossLevel1Price));
+                Log(String.Format("ReachTrailingStopLossLevel2Price: {0}", ReachTrailingStopLossLevel2Price));
             }
    
-            Print(String.Format("{0} - {1} - {2}: Finished onBar step", DateTime.Now, Symbol.ToString(), Direction.ToString()));
+            Log("Finished onBar step");
+        }
+
+        protected override void OnStop()
+        {
+            Log("Finished LevelTrader_cBot");
+        }
+
+        protected override void OnException(Exception exception)
+        {
+            Log(exception.ToString(), "ERROR");
         }
         
         private void PositionsOnOpened(PositionOpenedEventArgs args)
         {
             var pos = args.Position;
             if (TradeId.SequenceEqual(pos.Comment)){
-                 Print("Pending order was converted to position.");
-                 Print("Position opened at {0}", pos.EntryPrice);
+                 Log("Pending order was converted to position.");
+                 Log(String.Format("Position opened at {0}", pos.EntryPrice));
                  IsActivePosition = true;
             }
 
@@ -300,14 +314,9 @@ namespace cAlgo.Robots
             var pos = args.Position;
             if(TradeId.SequenceEqual(pos.Comment)){
                 string profitLossMessage = pos.GrossProfit >= 0 ? "profit" : "loss";   
-                Print("Position closed with {0} {1}", pos.GrossProfit, profitLossMessage);
+                Log(String.Format("Position closed with {0} {1}", pos.GrossProfit, profitLossMessage));
                 Stop();
             }
-        }
-
-        protected override void OnStop()
-        {
-            Print("Finished CommoditiesLevelTrader_cBot");
         }
         
         private bool WasReachPriceLevel(Bar lastBar, double priceLevel, bool up){
@@ -319,7 +328,7 @@ namespace cAlgo.Robots
             
             if (position == null)
             {
-                Print("Error: Position with TradeId: {0} does not exists.", TradeId);
+                Log("Error: Position with TradeId: {0} does not exists.", TradeId);
                 return;
             }
             
@@ -349,7 +358,7 @@ namespace cAlgo.Robots
             var orderToCancel = PendingOrders.FirstOrDefault(order => order.Id == PendingOrderId);
             if (orderToCancel == null)
             {
-                Print("Error: Pending order with id {0} does not exists.", PendingOrderId);
+                Log(String.Format("Pending order with id {0} does not exists.", PendingOrderId), "ERROR");
                 return;
             }
             
@@ -447,5 +456,33 @@ namespace cAlgo.Robots
              
             return errMessages;
         }
+
+        private void Log(string message, string level = "INFO")
+        {        
+            string logMessage = string.Format("[{0} - {1} - {2}] {3}: {4}", 
+                    DateTime.Now,
+                    Symbol.ToString(), 
+                    Direction.ToString(),
+                    level,
+                    message);
+
+            String dy = DateTime.Now.Day.ToString();
+            String mn = DateTime.Now.Month.ToString();
+            String yy = DateTime.Now.Year.ToString();
+            string logFileName = String.Format("LevelTrader_{0}{1}{2}.log", yy, mn, dy);
+            string logPath = LogFolderPath + logFileName;
+            if(!Directory.Exists(LogFolderPath))
+            {
+                Directory.CreateDirectory(LogFolderPath);
+            }
+            
+            Print(logMessage); // Log to terminal
+            File.AppendAllText(logPath,logMessage + Environment.NewLine); // Log to log file
+
+            if (level.SequenceEqual("ERROR")){
+                Notifications.SendEmail(LogSendersAddress, LogRecipientAddress, "Error in LevelTrader cBot", logMessage);
+            }
+        }
+
     }
 }
