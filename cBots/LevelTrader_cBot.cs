@@ -469,7 +469,7 @@ namespace cAlgo.Robots
             String dy = DateTime.Now.Day.ToString();
             String mn = DateTime.Now.Month.ToString();
             String yy = DateTime.Now.Year.ToString();
-            string logFileName = String.Format("LevelTrader_{0}{1}{2}.log", yy, mn, dy);
+            string logFileName = String.Format("LevelTrader_{0}_{1}_{2}{3}{4}.log", Symbol.ToString(), Direction.ToString(), yy, mn, dy);
             string logPath = LogFolderPath + logFileName;
             if(!Directory.Exists(LogFolderPath))
             {
