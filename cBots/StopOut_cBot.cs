@@ -13,10 +13,10 @@ using cAlgo.API.Internals;
 /*
 Name: StopOut_cBot
 Description: Bot for checking daily, weekly, monthly and overall PnL when PnL is above defined limits and if PnL is below defined limits, bot will close all pending orders and positions.
-Author: GeorgeQuantAnalyst
+Author: GeorgeFreelanceDeveloper
 CreateDate: 15.5.2023
-UpdateDate: 30.12.2023
-Version: 1.1.1
+UpdateDate: 1.1.2024
+Version: 1.2.0
 */
 
 namespace cAlgo.Robots
@@ -26,8 +26,8 @@ namespace cAlgo.Robots
     {
 
         // User defined properties
-        [Parameter(DefaultValue = 10)]
-        public double RiskPerTrade { get; set; }
+        [Parameter(DefaultValue = 5)]
+        public double RiskPerTradePercentage { get; set; }
 
         [Parameter(DefaultValue = 2)]
         public int MaxDailyDrawDownMultiplier { get; set; }
@@ -42,6 +42,7 @@ namespace cAlgo.Robots
         public int MaxDrawDownMultiplier { get; set; }
 
         // Computed properties
+        private double RiskPerTrade { get; set; }
         private double MaxDailyDrawDownAmount { get; set; }
         private double MaxWeeklyDrawDownAmount { get; set; }
         private double MaxMonthlyDrawDownAmount { get; set; }
@@ -59,7 +60,7 @@ namespace cAlgo.Robots
             Log("Start StopOut_cBot");
             
             Log("User defined properties:");
-            Log(String.Format("RiskPerTrade: {0}", RiskPerTrade));
+            Log(String.Format("RiskPerTradePercentage: {0}", RiskPerTradePercentage));
             Log(String.Format("MaxDailyDrawDownMultiplier: {0}", MaxDailyDrawDownMultiplier));
             Log(String.Format("MaxWeeklyDrawDownMultiplier: {0}", MaxWeeklyDrawDownMultiplier));
             Log(String.Format("MaxMonthlyDrawDownMultiplier: {0}", MaxMonthlyDrawDownMultiplier));
@@ -75,12 +76,14 @@ namespace cAlgo.Robots
             }
 
             Log("Compute properties ...");
+            RiskPerTrade = Math.Round(Account.Balance * (RiskPerTradePercentage/100),2);
             MaxDailyDrawDownAmount = MaxDailyDrawDownMultiplier * RiskPerTrade * -1;
             MaxWeeklyDrawDownAmount = MaxWeeklyDrawDownMultiplier * RiskPerTrade * -1;
             MaxMonthlyDrawDownAmount = MaxMonthlyDrawDownMultiplier * RiskPerTrade * -1;
             MaxDrawDownAmount = MaxDrawDownMultiplier * RiskPerTrade * -1;
 
             Log("Computed properties:");
+            Log(String.Format("RiskPerTrade: {0}", RiskPerTrade));
             Log(String.Format("MaxDailyDrawDownAmount: {0}", MaxDailyDrawDownAmount));
             Log(String.Format("MaxWeeklyDrawDownAmount: {0}", MaxWeeklyDrawDownAmount));
             Log(String.Format("MaxMonthlyDrawDownAmount: {0}", MaxMonthlyDrawDownAmount));
@@ -201,9 +204,9 @@ namespace cAlgo.Robots
         {
             var errMessages = new List<String>();
             
-            if (RiskPerTrade <= 0)
+            if (RiskPerTradePercentage <= 0)
             {
-                errMessages.Add(String.Format("WARNING: RiskPerTrade must be greater than 0. [RiskPerTrade: {0}]", RiskPerTrade));
+                errMessages.Add(String.Format("WARNING: RiskPerTradePercentage must be greater than 0. [RiskPerTradePercentage: {0}]", RiskPerTradePercentage));
             }
             
             if (MaxDailyDrawDownMultiplier <= 0)
