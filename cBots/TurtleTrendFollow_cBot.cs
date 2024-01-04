@@ -160,7 +160,6 @@ namespace cAlgo.Robots
             if(pos.Symbol.ToString().SequenceEqual(Symbol.Name)){
                 string profitLossMessage = pos.GrossProfit >= 0 ? "profit" : "loss";   
                 Log($"Position closed with {pos.GrossProfit} {profitLossMessage}");
-                Stop();
             }
         }
         
