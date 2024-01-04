@@ -115,12 +115,12 @@ namespace cAlgo.Robots
                 if(actualPrice > maxPriceLastDaysForEntry)
                 {
                     Log($"Price reach breakout zone for long (actualPrice > maxPriceLastDaysForEntry), bot will execute market long order. [actualPrice: {actualPrice}, maxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}]");
-                    ExecuteMarketOrder(TradeType.Buy, Symbol.Name, ComputeTradeAmount(actualPrice, timeFrame)); 
+                    ExecuteMarketOrder(TradeType.Buy, Symbol.Name, ComputeTradeAmount(timeFrame)); 
                 }
                 else if (actualPrice < minPriceLastDaysForEntry)
                 {
                     Log($"Price reach breakout zone for short (actualPrice < minPriceLastDaysForEntry), bot will execute market short order. [actualPrice: {actualPrice}, minPriceLastDaysForEntry: {minPriceLastDaysForEntry}]");
-                    ExecuteMarketOrder(TradeType.Sell, Symbol.Name, ComputeTradeAmount(actualPrice, timeFrame)); 
+                    ExecuteMarketOrder(TradeType.Sell, Symbol.Name, ComputeTradeAmount(timeFrame)); 
                 }
             }
             
@@ -173,15 +173,12 @@ namespace cAlgo.Robots
             }
         }
         
-        private double ComputeTradeAmount(double actualPrice, TimeFrame timeFrame)
+        private double ComputeTradeAmount(TimeFrame timeFrame)
         {
-           AverageTrueRange ATR = Indicators.AverageTrueRange(MarketData.GetBars(timeFrame), ATR_Period, MovingAverageType.Simple);
-                
-           double amount = ((RiskPercentage/100) * Account.Balance) / (2*ATR.Result.Last());
-           double amountInLotRaw = amount / (actualPrice * Symbol.LotSize);
-           double amountInLot = ((int)(amountInLotRaw / Symbol.VolumeInUnitsStep)) * Symbol.VolumeInUnitsStep;
-           
-           return amountInLot;
+            AverageTrueRange ATR = Indicators.AverageTrueRange(MarketData.GetBars(timeFrame), ATR_Period, MovingAverageType.Simple);       
+            double amount = ((RiskPercentage/100) * Account.Balance) / (2*ATR.Result.Last());
+            double amountNormalized = Symbol.NormalizeVolumeInUnits(amount);
+            return amountNormalized;
         }
 
         private List<String> ValidateInputs()
