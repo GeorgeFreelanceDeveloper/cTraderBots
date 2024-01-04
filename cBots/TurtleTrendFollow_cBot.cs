@@ -2,14 +2,25 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 using cAlgo.API;
 using cAlgo.API.Collections;
 using cAlgo.API.Indicators;
 using cAlgo.API.Internals;
 
+/*
+Name: TurtleTrendFollow_cBot
+Description: An automated bot for folowing trends.
+Author: GeorgeFreelanceDeveloper
+Updated by: LucyFreelanceDeveloper
+CreateDate: 3.1.2023
+UpdateDate: 4.1.2023
+Version: 0.0.1
+*/
+
 namespace cAlgo.Robots
 {
-    [Robot(AccessRights = AccessRights.None)]
+    [Robot(AccessRights = AccessRights.FullAccess)]
     public class TurtleTrendFollow_cBot : Robot
     {
         // User defined properties
@@ -22,9 +33,6 @@ namespace cAlgo.Robots
         [Parameter(DefaultValue = 10)]
         public int CountPeriodForStop { get; set; }
         
-        [Parameter(DefaultValue = 10)]
-        public double PercentageAllocation { get; set; }
-        
         [Parameter(DefaultValue = 5)]
         public double RiskPercentage {get; set;}
         
@@ -34,34 +42,50 @@ namespace cAlgo.Robots
         // Constants
         private readonly bool enableDebug = false;
         private readonly int ATR_Period = 20;
+        private readonly string LogFolderPath = "c:/Logs/cBots/LevelTrader/";
+        private readonly string LogSendersAddress = "senderaddress@email.com";
+        private readonly string LogRecipientAddress = "recipientaddress@email.com";
         
+        //Ids
+        private String TradeId {get; set;}
+
         public enum TradingStyle{
             INTRADAY,
             SWING,
             POSITION
         }
-        
 
         protected override void OnStart()
         {
-            //TODO: convert print to log INFO
-            Print("Start LevelTrader_cBot")
+            Log("Start TurtleTrendFollow_cBot");
 
-            Print("User defined properties:");
+            Log("User defined properties:");
+            Log($"SelectedTradingStyle: {SelectedTradingStyle}");
+            Log($"CountPeriodForEntry: {CountPeriodForEntry}");
+            Log($"CountPeriodForStop: {CountPeriodForStop}");
+            Log($"RiskPercentage: {RiskPercentage}");
+            Log($"MaxOpenPositions: {MaxOpenPositions}");
 
-            //TODO: print all user defined properties
-
-            //TODO: validate user defined properties (create private method for it)
-
-            //TODO: registrer listener onOpenPosition, onClosePosition and implement it
+            Log("Validation of User defined properties ...");
+            List<String> inputErrorMessages = ValidateInputs();
+            inputErrorMessages.ForEach(m => Log(m));
+            if (inputErrorMessages.Any()){
+                Log("App contains input validation errors and will be stop.");
+                Stop();
+                return;
+            }
+            
+            Log("Register listeners");
+            Positions.Opened += PositionsOnOpened;
+            Positions.Closed += PositionsOnClosed;
         }
         
         protected override void OnTick()
         {
-            Print("Start OnTick");
+            Log("Start OnTick");
             
-            double actualPrice = MarketData.GetTicks().Last().Ask;
-            //double actualPrice = MarketData.GetBars(TimeFrame.Minute).Last().Close; // For backtest on m1 bars
+            //double actualPrice = MarketData.GetTicks().Last().Ask;
+            double actualPrice = MarketData.GetBars(TimeFrame.Minute).Last().Close; // For backtest on m1 bars
             
             TimeFrame timeFrame = SelectTimeFrame(SelectedTradingStyle);
             
@@ -79,12 +103,12 @@ namespace cAlgo.Robots
             {
                 if(position.TradeType == TradeType.Buy && actualPrice < minPriceLastDaysForStop)
                 {
-                    //TODO: Log INFO: Position reach stop level (actualPrice < minPriceLastDaysForStop), position will be close [actualPrice:{actualPrice}, minPriceLastDaysForStop:{minPriceLastDaysForStop}].
+                    Log($"Long position reach stop level (actualPrice < minPriceLastDaysForStop), position will be close [actualPrice: {actualPrice}, minPriceLastDaysForStop: {minPriceLastDaysForStop}].");
                     position.Close();
                 }
                 if(position.TradeType == TradeType.Sell && actualPrice > maxPriceLastDaysForStop)
                 {
-                    //TODO: Log INFO: Short Position reach stop level (actualPrice > maxPriceLastDaysForStop), position will be close [actualPrice:{actualPrice}, maxPriceLastDaysForStop:{maxPriceLastDaysForStop}].
+                     Log($"Short position reach stop level (actualPrice > maxPriceLastDaysForStop), position will be close [actualPrice: {actualPrice}, maxPriceLastDaysForStop: {maxPriceLastDaysForStop}].");
                     position.Close();
                 }
             }
@@ -93,30 +117,54 @@ namespace cAlgo.Robots
             { 
                 if(actualPrice > maxPriceLastDaysForEntry)
                 {
-                    //TODO: Log INFO: Price reach breakout zone for long (actualPrice > maxPriceLastDaysForEntry), bot will execute market long order. [actualPrice:${actualPrice}, maxPriceLastDaysForEntry, ${maxPriceLastDaysForEntry}]
-                    ExecuteMarketOrder(TradeType.Buy,Symbol.Name, ComputeTradeAmount(actualPrice, TimeFrame)); 
+                    Log($"Price reach breakout zone for long (actualPrice > maxPriceLastDaysForEntry), bot will execute market long order. [actualPrice: {actualPrice}, maxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}]");
+                    ExecuteMarketOrder(TradeType.Buy,Symbol.Name, ComputeTradeAmount(actualPrice, timeFrame)); 
                 }
                 else if (actualPrice < minPriceLastDaysForEntry)
                 {
-                    //TODO: Log INFO: Price reach breakout zone for short (actualPrice < minPriceLastDaysForEntry), bot will execute market short order. [actualPrice:${actualPrice}, minPriceLastDaysForEntry, ${minPriceLastDaysForEntry}]
-                    ExecuteMarketOrder(TradeType.Sell,Symbol.Name, ComputeTradeAmount(actualPrice, TimeFrame)); 
+                    Log($"Price reach breakout zone for short (actualPrice < minPriceLastDaysForEntry), bot will execute market short order. [actualPrice: {actualPrice}, minPriceLastDaysForEntry: {minPriceLastDaysForEntry}]");
+                    ExecuteMarketOrder(TradeType.Sell,Symbol.Name, ComputeTradeAmount(actualPrice, timeFrame)); 
                 }
             }
             
             if(enableDebug)
             {
-                //TODO: convert to log (DEBUG)
-                Print($"ActualPrice: {actualPrice}");
-                Print(String.Format("maxPriceLastDaysForEntry: {0}", maxPriceLastDaysForEntry));
-                Print(String.Format("minPriceLastDaysForEntry: {0}", minPriceLastDaysForEntry));
+                Log($"ActualPrice: {actualPrice}", "DEBUG");
+                Log($"MaxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}", "DEBUG");
+                Log($"MinPriceLastDaysForEntry: {minPriceLastDaysForEntry}", "DEBUG");
             }
             
-            Print("Finished OnTick");  
+            Log("Finished OnTick");  
+        }
+
+        protected override void OnStop()
+        {
+            Log("Finished TurtleTrendFollow_cBot");
         }
 
         protected override void OnException(Exception exception)
         {
             Log(exception.ToString(), "ERROR");
+        }
+
+        private void PositionsOnOpened(PositionOpenedEventArgs args)
+        {
+            var pos = args.Position;
+            if (TradeId.SequenceEqual(pos.Comment)){
+                 Log("Pending order was converted to position.");
+                 Log($"Position opened at {pos.EntryPrice}");
+            }
+
+        }
+        
+        private void PositionsOnClosed(PositionClosedEventArgs args)
+        {
+            var pos = args.Position;
+            if(TradeId.SequenceEqual(pos.Comment)){
+                string profitLossMessage = pos.GrossProfit >= 0 ? "profit" : "loss";   
+                Log($"Position closed with {pos.GrossProfit} {profitLossMessage}");
+                Stop();
+            }
         }
         
         private TimeFrame SelectTimeFrame(TradingStyle tradingStyle){
@@ -142,15 +190,52 @@ namespace cAlgo.Robots
         private List<String> ValidateInputs()
         {
             var errMessages = new List<String>();
-
-            //TODO: validate user inputs
-
+            
+            if (CountPeriodForEntry <= 0)
+            {
+                errMessages.Add($"WARNING: CountPeriodForEntry must be greater than 0. [CountPeriodForEntry: {CountPeriodForEntry}]");
+            }
+            
+            if (CountPeriodForStop <= 0)
+            {
+                errMessages.Add($"WARNING: CountPeriodForStop must be greater than 0. [CountPeriodForStop: {CountPeriodForStop}]");
+            }
+            
+            if (RiskPercentage <= 0)
+            {
+                 errMessages.Add($"WARNING: RiskPercentage must be greater than 0. [RiskPercentage: {RiskPercentage}]");
+            }
+            
+            if (MaxOpenPositions <= 0)
+            {
+                errMessages.Add($"WARNING: MaxOpenPositions must be greater than 0. [MaxOpenPositions: {MaxOpenPositions}]");
+            }
+            
             return errMessages;
         }
-
+        
         private void Log(String message, String level = "INFO")
         {
-            //TODO: implement loging logic
+            string logMessage = $"[{DateTime.Now} - {Symbol.ToString()}] {level}: {message}";
+
+            String dy = DateTime.Now.Day.ToString();
+            String mn = DateTime.Now.Month.ToString();
+            String yy = DateTime.Now.Year.ToString();
+
+            string logFileName = $"LevelTrader_{Symbol.ToString()}_{yy}{mn}{dy}.log";
+            string logPath = LogFolderPath + logFileName;
+
+            if(!Directory.Exists(LogFolderPath))
+            {
+                Directory.CreateDirectory(LogFolderPath);
+            }
+            
+            Print(logMessage); // Log to terminal
+            File.AppendAllText(logPath,logMessage + Environment.NewLine); // Log to log file
+            
+            if (level.SequenceEqual("ERROR")){
+                Notifications.SendEmail(LogSendersAddress, LogRecipientAddress, "Error in LevelTrader cBot", logMessage);
+            }
         }
     }
 }
