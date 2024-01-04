@@ -42,7 +42,7 @@ namespace cAlgo.Robots
         // Constants
         private readonly bool enableDebug = false;
         private readonly int ATR_Period = 20;
-        private readonly string LogFolderPath = "c:/Logs/cBots/LevelTrader/";
+        private readonly string LogFolderPath = "c:/Logs/cBots/TurtleTrendFollow/";
         private readonly string LogSendersAddress = "senderaddress@email.com";
         private readonly string LogRecipientAddress = "recipientaddress@email.com";
         
@@ -84,8 +84,8 @@ namespace cAlgo.Robots
         {
             Log("Start OnTick");
             
-            //double actualPrice = MarketData.GetTicks().Last().Ask;
-            double actualPrice = MarketData.GetBars(TimeFrame.Minute).Last().Close; // For backtest on m1 bars
+            double actualPrice = MarketData.GetTicks().Last().Ask;
+            //double actualPrice = MarketData.GetBars(TimeFrame.Minute).Last().Close; // For backtest on m1 bars
             
             TimeFrame timeFrame = SelectTimeFrame(SelectedTradingStyle);
             
@@ -98,6 +98,9 @@ namespace cAlgo.Robots
             double minPriceLastDaysForStop = barsForStop.Min(b=>b.Low);
             
             var positions = Positions.ToList();
+
+            TradeId = System.Guid.NewGuid().ToString();
+            string label = TradeId;
             
             foreach(Position position in positions)
             {
@@ -118,12 +121,12 @@ namespace cAlgo.Robots
                 if(actualPrice > maxPriceLastDaysForEntry)
                 {
                     Log($"Price reach breakout zone for long (actualPrice > maxPriceLastDaysForEntry), bot will execute market long order. [actualPrice: {actualPrice}, maxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}]");
-                    ExecuteMarketOrder(TradeType.Buy,Symbol.Name, ComputeTradeAmount(actualPrice, timeFrame)); 
+                    ExecuteMarketOrder(TradeType.Buy, Symbol.Name, ComputeTradeAmount(actualPrice, timeFrame), label); 
                 }
                 else if (actualPrice < minPriceLastDaysForEntry)
                 {
                     Log($"Price reach breakout zone for short (actualPrice < minPriceLastDaysForEntry), bot will execute market short order. [actualPrice: {actualPrice}, minPriceLastDaysForEntry: {minPriceLastDaysForEntry}]");
-                    ExecuteMarketOrder(TradeType.Sell,Symbol.Name, ComputeTradeAmount(actualPrice, timeFrame)); 
+                    ExecuteMarketOrder(TradeType.Sell, Symbol.Name, ComputeTradeAmount(actualPrice, timeFrame), label); 
                 }
             }
             
@@ -132,6 +135,8 @@ namespace cAlgo.Robots
                 Log($"ActualPrice: {actualPrice}", "DEBUG");
                 Log($"MaxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}", "DEBUG");
                 Log($"MinPriceLastDaysForEntry: {minPriceLastDaysForEntry}", "DEBUG");
+                Log("Generated properties ... ");
+                Log($"TradeId: {TradeId}", "DEBUG");
             }
             
             Log("Finished OnTick");  
@@ -150,8 +155,8 @@ namespace cAlgo.Robots
         private void PositionsOnOpened(PositionOpenedEventArgs args)
         {
             var pos = args.Position;
-            if (TradeId.SequenceEqual(pos.Comment)){
-                 Log("Pending order was converted to position.");
+            if (TradeId.SequenceEqual(pos.Label)){
+                 Log("Order was converted to position.");
                  Log($"Position opened at {pos.EntryPrice}");
             }
 
@@ -160,7 +165,7 @@ namespace cAlgo.Robots
         private void PositionsOnClosed(PositionClosedEventArgs args)
         {
             var pos = args.Position;
-            if(TradeId.SequenceEqual(pos.Comment)){
+            if(TradeId.SequenceEqual(pos.Label)){
                 string profitLossMessage = pos.GrossProfit >= 0 ? "profit" : "loss";   
                 Log($"Position closed with {pos.GrossProfit} {profitLossMessage}");
                 Stop();
@@ -222,7 +227,7 @@ namespace cAlgo.Robots
             String mn = DateTime.Now.Month.ToString();
             String yy = DateTime.Now.Year.ToString();
 
-            string logFileName = $"LevelTrader_{Symbol.ToString()}_{yy}{mn}{dy}.log";
+            string logFileName = $"TurtleTrendFollow_{Symbol.ToString()}_{yy}{mn}{dy}.log";
             string logPath = LogFolderPath + logFileName;
 
             if(!Directory.Exists(LogFolderPath))
@@ -234,7 +239,7 @@ namespace cAlgo.Robots
             File.AppendAllText(logPath,logMessage + Environment.NewLine); // Log to log file
             
             if (level.SequenceEqual("ERROR")){
-                Notifications.SendEmail(LogSendersAddress, LogRecipientAddress, "Error in LevelTrader cBot", logMessage);
+                Notifications.SendEmail(LogSendersAddress, LogRecipientAddress, "Error in TurtleTrendFollow cBot", logMessage);
             }
         }
     }
