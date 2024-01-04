@@ -147,7 +147,7 @@ namespace cAlgo.Robots
         private void PositionsOnOpened(PositionOpenedEventArgs args)
         {
             var pos = args.Position;
-            if (pos.Symbol.ToString() == Symbol.Name){
+            if (pos.Symbol.ToString().SequenceEqual(Symbol.Name)){
                  Log("Order was converted to position.");
                  Log($"Position opened at {pos.EntryPrice}");
             }
@@ -157,7 +157,7 @@ namespace cAlgo.Robots
         private void PositionsOnClosed(PositionClosedEventArgs args)
         {
             var pos = args.Position;
-            if(pos.Symbol.ToString() == Symbol.Name){
+            if(pos.Symbol.ToString().SequenceEqual(Symbol.Name)){
                 string profitLossMessage = pos.GrossProfit >= 0 ? "profit" : "loss";   
                 Log($"Position closed with {pos.GrossProfit} {profitLossMessage}");
                 Stop();
