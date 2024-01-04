@@ -45,9 +45,6 @@ namespace cAlgo.Robots
         private readonly string LogFolderPath = "c:/Logs/cBots/TurtleTrendFollow/";
         private readonly string LogSendersAddress = "senderaddress@email.com";
         private readonly string LogRecipientAddress = "recipientaddress@email.com";
-        
-        //Ids
-        private String TradeId {get; set;}
 
         public enum TradingStyle{
             INTRADAY,
@@ -98,9 +95,6 @@ namespace cAlgo.Robots
             double minPriceLastDaysForStop = barsForStop.Min(b=>b.Low);
             
             var positions = Positions.ToList();
-
-            TradeId = System.Guid.NewGuid().ToString();
-            string label = TradeId;
             
             foreach(Position position in positions)
             {
@@ -121,12 +115,12 @@ namespace cAlgo.Robots
                 if(actualPrice > maxPriceLastDaysForEntry)
                 {
                     Log($"Price reach breakout zone for long (actualPrice > maxPriceLastDaysForEntry), bot will execute market long order. [actualPrice: {actualPrice}, maxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}]");
-                    ExecuteMarketOrder(TradeType.Buy, Symbol.Name, ComputeTradeAmount(actualPrice, timeFrame), label); 
+                    ExecuteMarketOrder(TradeType.Buy, Symbol.Name, ComputeTradeAmount(actualPrice, timeFrame)); 
                 }
                 else if (actualPrice < minPriceLastDaysForEntry)
                 {
                     Log($"Price reach breakout zone for short (actualPrice < minPriceLastDaysForEntry), bot will execute market short order. [actualPrice: {actualPrice}, minPriceLastDaysForEntry: {minPriceLastDaysForEntry}]");
-                    ExecuteMarketOrder(TradeType.Sell, Symbol.Name, ComputeTradeAmount(actualPrice, timeFrame), label); 
+                    ExecuteMarketOrder(TradeType.Sell, Symbol.Name, ComputeTradeAmount(actualPrice, timeFrame)); 
                 }
             }
             
@@ -135,8 +129,6 @@ namespace cAlgo.Robots
                 Log($"ActualPrice: {actualPrice}", "DEBUG");
                 Log($"MaxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}", "DEBUG");
                 Log($"MinPriceLastDaysForEntry: {minPriceLastDaysForEntry}", "DEBUG");
-                Log("Generated properties ... ");
-                Log($"TradeId: {TradeId}", "DEBUG");
             }
             
             Log("Finished OnTick");  
@@ -155,7 +147,7 @@ namespace cAlgo.Robots
         private void PositionsOnOpened(PositionOpenedEventArgs args)
         {
             var pos = args.Position;
-            if (TradeId.SequenceEqual(pos.Label)){
+            if (pos.Symbol.ToString() == Symbol.Name){
                  Log("Order was converted to position.");
                  Log($"Position opened at {pos.EntryPrice}");
             }
@@ -165,7 +157,7 @@ namespace cAlgo.Robots
         private void PositionsOnClosed(PositionClosedEventArgs args)
         {
             var pos = args.Position;
-            if(TradeId.SequenceEqual(pos.Label)){
+            if(pos.Symbol.ToString() == Symbol.Name){
                 string profitLossMessage = pos.GrossProfit >= 0 ? "profit" : "loss";   
                 Log($"Position closed with {pos.GrossProfit} {profitLossMessage}");
                 Stop();
