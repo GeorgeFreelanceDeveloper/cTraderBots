@@ -17,6 +17,7 @@ CreateDate: 3.1.2023
 UpdateDate: 7.1.2023
 Version: 0.0.2
 */
+
 namespace cAlgo.Robots
 {
     [Robot(AccessRights = AccessRights.FullAccess)]
@@ -131,7 +132,7 @@ namespace cAlgo.Robots
                 if(actualPrice > maxPriceLastDaysForEntry)
                 {
                     Log($"Price reach breakout zone for long (actualPrice > maxPriceLastDaysForEntry), bot will execute market long order. [actualPrice: {actualPrice}, maxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}]");
-                    TradeResult result = ExecuteMarketOrder(TradeType.Buy, Symbol.Name, ComputeTradeAmount()); 
+                    TradeResult result = ExecuteMarketOrder(TradeType.Buy, Symbol.Name, ComputeTradeAmount(level)); 
                     int id = result.Position.Id;
                     switch(level)
                     {
@@ -142,7 +143,7 @@ namespace cAlgo.Robots
                 else if (actualPrice < minPriceLastDaysForEntry && !LongOnly)
                 {
                     Log($"Price reach breakout zone for short (actualPrice < minPriceLastDaysForEntry), bot will execute market short order. [actualPrice: {actualPrice}, minPriceLastDaysForEntry: {minPriceLastDaysForEntry}]");
-                    TradeResult result = ExecuteMarketOrder(TradeType.Sell, Symbol.Name, ComputeTradeAmount()); 
+                    TradeResult result = ExecuteMarketOrder(TradeType.Sell, Symbol.Name, ComputeTradeAmount(level)); 
                     var id = result.Position.Id;
                     switch(level)
                     {
@@ -185,10 +186,11 @@ namespace cAlgo.Robots
             }
         }
         
-        private double ComputeTradeAmount()
+        private double ComputeTradeAmount(Level level)
         {
-            AverageTrueRange ATR = Indicators.AverageTrueRange(MarketData.GetBars(TimeFrame.Daily), ATR_Period, MovingAverageType.Simple);       
-            double amount = ((RiskPercentage/100) * Account.Balance) / (2*ATR.Result.Last());
+            AverageTrueRange ATR = Indicators.AverageTrueRange(MarketData.GetBars(TimeFrame.Daily), ATR_Period, MovingAverageType.Simple); 
+            int atrMultiplier = level == Level.L1 ? 2 : 4;
+            double amount = ((RiskPercentage/100) * Account.Balance) / (atrMultiplier*ATR.Result.Last());
             double amountNormalized = Symbol.NormalizeVolumeInUnits(amount);
             return amountNormalized;
         }
