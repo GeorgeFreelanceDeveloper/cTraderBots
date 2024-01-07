@@ -10,58 +10,59 @@ using cAlgo.API.Internals;
 
 /*
 Name: TurtleTrendFollow_cBot
-Description: An automated bot for folowing trends.
+Description: An automated bot for trend following strategy Turtle.
 Author: GeorgeFreelanceDeveloper
-Updated by: LucyFreelanceDeveloper
+Updated by: LucyFreelanceDeveloper, GeorgeFreelanceDeveloper
 CreateDate: 3.1.2023
-UpdateDate: 4.1.2023
-Version: 0.0.1
+UpdateDate: 7.1.2023
+Version: 0.0.2
 */
-
 namespace cAlgo.Robots
 {
     [Robot(AccessRights = AccessRights.FullAccess)]
     public class TurtleTrendFollow_cBot : Robot
     {
         // User defined properties
-        [Parameter("Type", DefaultValue = TradingStyle.SWING)]
-        public TradingStyle SelectedTradingStyle { get; set; }
-        
         [Parameter(DefaultValue = 20)]
-        public int CountPeriodForEntry { get; set; }
+        public int CountPeriodForEntry1 { get; set; }
         
         [Parameter(DefaultValue = 10)]
-        public int CountPeriodForStop { get; set; }
+        public int CountPeriodForStop1 { get; set; }
         
-        [Parameter(DefaultValue = 5)]
+        [Parameter(DefaultValue = 55)]
+        public int CountPeriodForEntry2 { get; set; }
+        
+        [Parameter(DefaultValue = 20)]
+        public int CountPeriodForStop2 { get; set; }
+        
+        [Parameter(DefaultValue = 2.5)]
         public double RiskPercentage {get; set;}
         
-        [Parameter(DefaultValue = 1)]
-        public int MaxOpenPositions { get; set; }
+        [Parameter(DefaultValue = true)]
+        public bool LongOnly { get; set; }
        
         // Constants
-        private readonly bool enableDebug = false;
         private readonly int ATR_Period = 20;
         private readonly string LogFolderPath = "c:/Logs/cBots/TurtleTrendFollow/";
         private readonly string LogSendersAddress = "senderaddress@email.com";
         private readonly string LogRecipientAddress = "recipientaddress@email.com";
+        
+        // Computed properties
+        private int Trade1_Id = -1;
+        private int Trade2_Id = -1;
 
-        public enum TradingStyle{
-            INTRADAY,
-            SWING,
-            POSITION
-        }
-
+        public enum Level { L1, L2 }
+        
         protected override void OnStart()
         {
             Log("Start TurtleTrendFollow_cBot");
 
             Log("User defined properties:");
-            Log($"SelectedTradingStyle: {SelectedTradingStyle}");
-            Log($"CountPeriodForEntry: {CountPeriodForEntry}");
-            Log($"CountPeriodForStop: {CountPeriodForStop}");
+            Log($"CountPeriodForEntry1: {CountPeriodForEntry1}");
+            Log($"CountPeriodForStop1: {CountPeriodForStop1}");
+            Log($"CountPeriodForEntry2: {CountPeriodForEntry2}");
+            Log($"CountPeriodForStop2: {CountPeriodForStop2}");
             Log($"RiskPercentage: {RiskPercentage}");
-            Log($"MaxOpenPositions: {MaxOpenPositions}");
 
             Log("Validation of User defined properties ...");
             List<String> inputErrorMessages = ValidateInputs();
@@ -80,23 +81,77 @@ namespace cAlgo.Robots
         protected override void OnTick()
         {
             Log("Start OnTick");
+            ExecuteStrategyPerLevel(Level.L1);
+            ExecuteStrategyPerLevel(Level.L2);
+            Log("Finished OnTick");  
+        }
+        
+        /*
+        protected override void OnBar()
+        {
+            Log("Start OnBar");
+            ExecuteStrategyPerLevel(Level.L1);
+            ExecuteStrategyPerLevel(Level.L2);
+            Log("Finished OnBar"); 
+        }
+        */
+
+        protected override void OnStop()
+        {
+            Log("Finished TurtleTrendFollow_cBot");
+        }
+
+        protected override void OnException(Exception exception)
+        {
+            Log(exception.ToString(), "ERROR");
+        }
+        
+        private void ExecuteStrategyPerLevel(Level level)
+        {
+            Log($"ExecuteStrategyPerLevel: {level}");
+            int CountPeriodForEntry = level == Level.L1 ? CountPeriodForEntry1 : CountPeriodForEntry2;
+            int CountPeriodForStop = level == Level.L1 ? CountPeriodForStop1 : CountPeriodForStop2;
+            int tradeId = level == Level.L1 ? Trade1_Id : Trade2_Id;
             
-            double actualPrice = MarketData.GetTicks().Last().Ask;
-            //double actualPrice = MarketData.GetBars(TimeFrame.Minute).Last().Close; // For backtest on m1 bars
+            //double actualPrice = MarketData.GetTicks().Last().Ask;
+            double actualPrice = MarketData.GetBars(TimeFrame.Minute).Last().Close; // For backtest on m1 bars
             
-            TimeFrame timeFrame = SelectTimeFrame(SelectedTradingStyle);
-            
-            var barsForEntry = MarketData.GetBars(timeFrame).SkipLast(1).ToList().TakeLast(CountPeriodForEntry);
+            var barsForEntry = MarketData.GetBars(TimeFrame.Daily).SkipLast(1).ToList().TakeLast(CountPeriodForEntry);
             double maxPriceLastDaysForEntry =  barsForEntry.Max(b=>b.High);
             double minPriceLastDaysForEntry = barsForEntry.Min(b=>b.Low);
             
-            var barsForStop = MarketData.GetBars(timeFrame).SkipLast(1).ToList().TakeLast(CountPeriodForStop);
+            var barsForStop = MarketData.GetBars(TimeFrame.Daily).SkipLast(1).ToList().TakeLast(CountPeriodForStop);
             double maxPriceLastDaysForStop = barsForStop.Max(b=>b.High);
             double minPriceLastDaysForStop = barsForStop.Min(b=>b.Low);
             
-            var positions = Positions.ToList();
+            Position position = Positions.ToList().Where(p=>p.Id == tradeId).FirstOrDefault();
             
-            foreach(Position position in positions)
+            if(position == null)
+            {
+                if(actualPrice > maxPriceLastDaysForEntry)
+                {
+                    Log($"Price reach breakout zone for long (actualPrice > maxPriceLastDaysForEntry), bot will execute market long order. [actualPrice: {actualPrice}, maxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}]");
+                    TradeResult result = ExecuteMarketOrder(TradeType.Buy, Symbol.Name, ComputeTradeAmount()); 
+                    int id = result.Position.Id;
+                    switch(level)
+                    {
+                        case Level.L1: Trade1_Id = id; break;
+                        case Level.L2: Trade2_Id = id; break;
+                    }
+                }
+                else if (actualPrice < minPriceLastDaysForEntry && !LongOnly)
+                {
+                    Log($"Price reach breakout zone for short (actualPrice < minPriceLastDaysForEntry), bot will execute market short order. [actualPrice: {actualPrice}, minPriceLastDaysForEntry: {minPriceLastDaysForEntry}]");
+                    TradeResult result = ExecuteMarketOrder(TradeType.Sell, Symbol.Name, ComputeTradeAmount()); 
+                    var id = result.Position.Id;
+                    switch(level)
+                    {
+                        case Level.L1: Trade1_Id = id; break;
+                        case Level.L2: Trade2_Id = id; break;
+                    }
+                }
+            }
+            else
             {
                 if(position.TradeType == TradeType.Buy && actualPrice < minPriceLastDaysForStop)
                 {
@@ -108,40 +163,7 @@ namespace cAlgo.Robots
                      Log($"Short position reach stop level (actualPrice > maxPriceLastDaysForStop), position will be close [actualPrice: {actualPrice}, maxPriceLastDaysForStop: {maxPriceLastDaysForStop}].");
                     position.Close();
                 }
-            }
-            
-            if(Positions.Count < MaxOpenPositions)
-            { 
-                if(actualPrice > maxPriceLastDaysForEntry)
-                {
-                    Log($"Price reach breakout zone for long (actualPrice > maxPriceLastDaysForEntry), bot will execute market long order. [actualPrice: {actualPrice}, maxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}]");
-                    ExecuteMarketOrder(TradeType.Buy, Symbol.Name, ComputeTradeAmount(timeFrame)); 
-                }
-                else if (actualPrice < minPriceLastDaysForEntry)
-                {
-                    Log($"Price reach breakout zone for short (actualPrice < minPriceLastDaysForEntry), bot will execute market short order. [actualPrice: {actualPrice}, minPriceLastDaysForEntry: {minPriceLastDaysForEntry}]");
-                    ExecuteMarketOrder(TradeType.Sell, Symbol.Name, ComputeTradeAmount(timeFrame)); 
-                }
-            }
-            
-            if(enableDebug)
-            {
-                Log($"ActualPrice: {actualPrice}", "DEBUG");
-                Log($"MaxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}", "DEBUG");
-                Log($"MinPriceLastDaysForEntry: {minPriceLastDaysForEntry}", "DEBUG");
-            }
-            
-            Log("Finished OnTick");  
-        }
-
-        protected override void OnStop()
-        {
-            Log("Finished TurtleTrendFollow_cBot");
-        }
-
-        protected override void OnException(Exception exception)
-        {
-            Log(exception.ToString(), "ERROR");
+            }            
         }
 
         private void PositionsOnOpened(PositionOpenedEventArgs args)
@@ -163,18 +185,9 @@ namespace cAlgo.Robots
             }
         }
         
-        private TimeFrame SelectTimeFrame(TradingStyle tradingStyle){
-            switch(tradingStyle){
-                case TradingStyle.INTRADAY: return TimeFrame.Hour;
-                case TradingStyle.SWING: return TimeFrame.Daily;
-                case TradingStyle.POSITION: return TimeFrame.Weekly; 
-                default: return TimeFrame.Daily;
-            }
-        }
-        
-        private double ComputeTradeAmount(TimeFrame timeFrame)
+        private double ComputeTradeAmount()
         {
-            AverageTrueRange ATR = Indicators.AverageTrueRange(MarketData.GetBars(timeFrame), ATR_Period, MovingAverageType.Simple);       
+            AverageTrueRange ATR = Indicators.AverageTrueRange(MarketData.GetBars(TimeFrame.Daily), ATR_Period, MovingAverageType.Simple);       
             double amount = ((RiskPercentage/100) * Account.Balance) / (2*ATR.Result.Last());
             double amountNormalized = Symbol.NormalizeVolumeInUnits(amount);
             return amountNormalized;
@@ -184,24 +197,29 @@ namespace cAlgo.Robots
         {
             var errMessages = new List<String>();
             
-            if (CountPeriodForEntry <= 0)
+            if (CountPeriodForEntry1 <= 0)
             {
-                errMessages.Add($"WARNING: CountPeriodForEntry must be greater than 0. [CountPeriodForEntry: {CountPeriodForEntry}]");
+                errMessages.Add($"WARNING: CountPeriodForEntry1 must be greater than 0. [CountPeriodForEntry1: {CountPeriodForEntry1}]");
             }
             
-            if (CountPeriodForStop <= 0)
+            if (CountPeriodForStop1 <= 0)
             {
-                errMessages.Add($"WARNING: CountPeriodForStop must be greater than 0. [CountPeriodForStop: {CountPeriodForStop}]");
+                errMessages.Add($"WARNING: CountPeriodForStop1 must be greater than 0. [CountPeriodForStop1: {CountPeriodForStop1}]");
+            }
+            
+            if (CountPeriodForEntry2 <= 0)
+            {
+                errMessages.Add($"WARNING: CountPeriodForEntry2 must be greater than 0. [CountPeriodForEntry2: {CountPeriodForEntry2}]");
+            }
+            
+            if (CountPeriodForStop2 <= 0)
+            {
+                errMessages.Add($"WARNING: CountPeriodForStop2 must be greater than 0. [CountPeriodForStop2: {CountPeriodForStop2}]");
             }
             
             if (RiskPercentage <= 0)
             {
                  errMessages.Add($"WARNING: RiskPercentage must be greater than 0. [RiskPercentage: {RiskPercentage}]");
-            }
-            
-            if (MaxOpenPositions <= 0)
-            {
-                errMessages.Add($"WARNING: MaxOpenPositions must be greater than 0. [MaxOpenPositions: {MaxOpenPositions}]");
             }
             
             return errMessages;
