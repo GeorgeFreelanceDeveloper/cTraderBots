@@ -78,7 +78,8 @@ namespace cAlgo.Robots
             Positions.Opened += PositionsOnOpened;
             Positions.Closed += PositionsOnClosed;
         }
-        
+
+        /*
         protected override void OnTick()
         {
             Log("Start OnTick");
@@ -86,8 +87,8 @@ namespace cAlgo.Robots
             ExecuteStrategyPerLevel(Level.L2);
             Log("Finished OnTick");  
         }
+        */
         
-        /*
         protected override void OnBar()
         {
             Log("Start OnBar");
@@ -95,7 +96,6 @@ namespace cAlgo.Robots
             ExecuteStrategyPerLevel(Level.L2);
             Log("Finished OnBar"); 
         }
-        */
 
         protected override void OnStop()
         {
@@ -114,8 +114,8 @@ namespace cAlgo.Robots
             int CountPeriodForStop = level == Level.L1 ? CountPeriodForStop1 : CountPeriodForStop2;
             int tradeId = level == Level.L1 ? Trade1_Id : Trade2_Id;
             
-            //double actualPrice = MarketData.GetTicks().Last().Ask;
-            double actualPrice = MarketData.GetBars(TimeFrame.Minute).Last().Close; // For backtest on m1 bars
+            double actualPrice = MarketData.GetTicks().Last().Ask;
+            //double actualPrice = MarketData.GetBars(TimeFrame.Minute).Last().Close; // For backtest on m1 bars
             
             var barsForEntry = MarketData.GetBars(TimeFrame.Daily).SkipLast(1).ToList().TakeLast(CountPeriodForEntry);
             double maxPriceLastDaysForEntry =  barsForEntry.Max(b=>b.High);
