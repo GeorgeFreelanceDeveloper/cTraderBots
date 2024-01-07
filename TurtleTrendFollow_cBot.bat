@@ -2,7 +2,7 @@
 set ctid="YOUR_EMAIL_ADDRESS"
 set pwd-file="ctrader.pwd"
 set account="YOUR_ACCOUNT_ID"
-set symbol="EURUSD"
+set symbol="US500"
 set period="m1"
 
 ::Environment-variables
