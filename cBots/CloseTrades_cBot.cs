@@ -14,7 +14,7 @@ Description: Bot closing pending orders and opened positions at defined date and
 Author: LucyFreelanceDeveloper
 CreateDate: 29.10.2023
 UpdateDate: 30.12.2023
-Version: 1.0.1
+Version: 1.0.2
 */
 
 namespace cAlgo.Robots
@@ -74,7 +74,7 @@ namespace cAlgo.Robots
 
         protected override void OnBar()
         {
-            Log(String.Format("{0}: Start onBar step", DateTime.Now));
+            Log("Start onBar step");
              
             DateTime now = DateTime.Now;
              
@@ -83,7 +83,7 @@ namespace cAlgo.Robots
                CancelOrdersAndPositions(All, Market);
             }
             
-            Log(String.Format("{0}: Finished onBar step", DateTime.Now));
+            Log("Finished onBar step");
         }
 
         protected override void OnException(Exception exception)
