@@ -37,20 +37,22 @@ namespace cAlgo.Robots
         public int CountPeriodForStop2 { get; set; }
         
         [Parameter(DefaultValue = 2.5)]
-        public double RiskPercentage {get; set;}
+        public double RiskPercentage { get; set; }
         
         [Parameter(DefaultValue = true)]
         public bool LongOnly { get; set; }
+
+        [Parameter(DefaultValue = -1)]
+        public int Trade1_Id { get; set; }
+
+        [Parameter(DefaultValue = -1)]
+        public int Trade2_Id { get; set; }
        
         // Constants
         private readonly int ATR_Period = 20;
         private readonly string LogFolderPath = "c:/Logs/cBots/TurtleTrendFollow/";
         private readonly string LogSendersAddress = "senderaddress@email.com";
         private readonly string LogRecipientAddress = "recipientaddress@email.com";
-        
-        // Computed properties
-        private int Trade1_Id = -1;
-        private int Trade2_Id = -1;
 
         public enum Level { L1, L2 }
         
@@ -63,6 +65,8 @@ namespace cAlgo.Robots
             Log($"CountPeriodForStop1: {CountPeriodForStop1}");
             Log($"CountPeriodForEntry2: {CountPeriodForEntry2}");
             Log($"CountPeriodForStop2: {CountPeriodForStop2}");
+            Log($"Trade1_Id: {Trade1_Id}");
+            Log($"Trade2_Id: {Trade2_Id}");
             Log($"RiskPercentage: {RiskPercentage}");
 
             Log("Validation of User defined properties ...");
