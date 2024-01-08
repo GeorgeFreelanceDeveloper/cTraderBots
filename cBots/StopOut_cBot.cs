@@ -16,7 +16,7 @@ Description: Bot for checking daily, weekly, monthly and overall PnL when PnL is
 Author: GeorgeFreelanceDeveloper
 CreateDate: 15.5.2023
 UpdateDate: 1.1.2024
-Version: 1.2.0
+Version: 1.2.1
 */
 
 namespace cAlgo.Robots
@@ -93,7 +93,6 @@ namespace cAlgo.Robots
         protected override void OnBar()
         {
             Log("Start onBar step");
-            Log("Start to check if there is sufficient equity for trading");
             
             var dailyPnL = ComputeDailyPnL();
             var weeklyPnL = ComputeWeeklyPnL();
@@ -150,7 +149,6 @@ namespace cAlgo.Robots
             LocalStorage.SetObject("MaxMonthlyDrawDownReach",false, LocalStorageScope.Device);
             LocalStorage.SetObject("MaxDrawDownAmount",false, LocalStorageScope.Device);
             
-            Log("Finished to check if there is sufficient equity for trading");
             Log("Finished onBar step");
         }
 
