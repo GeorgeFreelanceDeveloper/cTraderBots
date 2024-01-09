@@ -176,7 +176,7 @@ namespace cAlgo.Robots
             var pos = args.Position;
             if (pos.Symbol.ToString().SequenceEqual(Symbol.Name)){
                  Log("Order was converted to position.");
-                 Log($"Position opened at {pos.EntryPrice}");
+                 Log($"Position id {pos.Id} opened at {pos.EntryPrice}");
             }
 
         }
@@ -186,7 +186,7 @@ namespace cAlgo.Robots
             var pos = args.Position;
             if(pos.Symbol.ToString().SequenceEqual(Symbol.Name)){
                 string profitLossMessage = pos.GrossProfit >= 0 ? "profit" : "loss";   
-                Log($"Position closed with {pos.GrossProfit} {profitLossMessage}");
+                Log($"Position id {pos.Id} closed with {pos.GrossProfit} {profitLossMessage}");
             }
         }
         
