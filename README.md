@@ -18,6 +18,10 @@ Think of cBots as programs that run inside cTrader desktop and autonomously exec
 ## Turtle strategy
 The Turtle Trading strategy was developed by Richard Dennis and William Eckhardt in the early 1980s. The story goes that Richard Dennis, a successful commodity trader, believed that trading could be taught to anyone, and he decided to conduct an experiment to prove his theory. He recruited a group of people, known as the "Turtles," and taught them his trading system.
 
+<div align="center">
+<img src="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwww.shoreexcursionsgroup.com%2Fimg%2Ftour%2FHWOHHNTURPM-2.jpg&f=1&nofb=1&ipt=0360bda2d7e582678693667c94537ed3526e84885ab03e1769ce4214faab1c3a&ipo=images" alt="drawing" width="500"/>
+</div>
+<br>
 Here's an overview of the Turtle Trading strategy:
 
 * **Trend Following**: The core principle of the Turtle Trading strategy is trend following. The idea is to identify and ride strong trends in the financial markets. Turtles were taught to buy and hold futures contracts for markets that were in a strong uptrend and to sell short and hold contracts for markets in a strong downtrend.
