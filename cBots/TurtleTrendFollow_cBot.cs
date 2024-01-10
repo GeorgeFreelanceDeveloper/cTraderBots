@@ -137,7 +137,7 @@ namespace cAlgo.Robots
                 {
                     double stopLossPips = (Math.Abs(maxPriceLastDaysForEntry - minPriceLastDaysForStop)/Symbol.PipSize);
                     
-                    Log($"Price reach breakout zone for long (actualPrice > maxPriceLastDaysForEntry), bot will execute market long order. [actualPrice: {actualPrice}, maxPriceLastDaysForEntry: {maxPriceLastDaysForEntry},]");
+                    Log($"Price reach breakout zone for long (actualPrice > maxPriceLastDaysForEntry), bot will execute market long order. [actualPrice: {actualPrice}, maxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}]");
                     TradeResult result = ExecuteMarketOrder(TradeType.Buy, Symbol.Name, ComputeTradeAmount(level), "", stopLossPips, null);
                     
                     int id = result.Position.Id;
