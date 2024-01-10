@@ -14,8 +14,8 @@ Description: An automated bot for trend following strategy Turtle.
 Author: GeorgeFreelanceDeveloper
 Updated by: LucyFreelanceDeveloper, GeorgeFreelanceDeveloper
 CreateDate: 3.1.2023
-UpdateDate: 7.1.2023
-Version: 0.0.2
+UpdateDate: 10.1.2023
+Version: 0.0.3
 */
 
 namespace cAlgo.Robots
@@ -53,7 +53,13 @@ namespace cAlgo.Robots
         private readonly string LogFolderPath = "c:/Logs/cBots/TurtleTrendFollow/";
         private readonly string LogSendersAddress = "senderaddress@email.com";
         private readonly string LogRecipientAddress = "recipientaddress@email.com";
-
+        
+        // Computed properties
+        private double MoveForLongPositionStopLoss {get; set;}
+        private double MoveForShortPositionStopLoss {get; set;}
+        private double StopLossLongPips {get; set;}
+        private double StopLossShortPips {get; set;}
+        
         public enum Level { L1, L2 }
         
         protected override void OnStart()
@@ -129,14 +135,20 @@ namespace cAlgo.Robots
             double maxPriceLastDaysForStop = barsForStop.Max(b=>b.High);
             double minPriceLastDaysForStop = barsForStop.Min(b=>b.Low);
             
+            MoveForLongPositionStopLoss = maxPriceLastDaysForEntry - minPriceLastDaysForStop;
+            MoveForShortPositionStopLoss = minPriceLastDaysForEntry - maxPriceLastDaysForStop;
+            StopLossLongPips = (Math.Abs(MoveForLongPositionStopLoss)/Symbol.PipSize);
+            StopLossShortPips = (Math.Abs(MoveForShortPositionStopLoss)/Symbol.PipSize);
+            
             Position position = Positions.ToList().Where(p=>p.Id == tradeId).FirstOrDefault();
             
             if(position == null)
             {
                 if(actualPrice > maxPriceLastDaysForEntry)
                 {
-                    Log($"Price reach breakout zone for long (actualPrice > maxPriceLastDaysForEntry), bot will execute market long order. [actualPrice: {actualPrice}, maxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}]");
-                    TradeResult result = ExecuteMarketOrder(TradeType.Buy, Symbol.Name, ComputeTradeAmount(level)); 
+                    Log($"Price reach breakout zone for long (actualPrice > maxPriceLastDaysForEntry), bot will execute market long order. [actualPrice: {actualPrice}, maxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}, ]");
+                    TradeResult result = ExecuteMarketOrder(TradeType.Buy, Symbol.Name, ComputeTradeAmount(level), "", StopLossLongPips, null);
+                    
                     int id = result.Position.Id;
                     switch(level)
                     {
@@ -147,7 +159,8 @@ namespace cAlgo.Robots
                 else if (actualPrice < minPriceLastDaysForEntry && !LongOnly)
                 {
                     Log($"Price reach breakout zone for short (actualPrice < minPriceLastDaysForEntry), bot will execute market short order. [actualPrice: {actualPrice}, minPriceLastDaysForEntry: {minPriceLastDaysForEntry}]");
-                    TradeResult result = ExecuteMarketOrder(TradeType.Sell, Symbol.Name, ComputeTradeAmount(level)); 
+                    TradeResult result = ExecuteMarketOrder(TradeType.Sell, Symbol.Name, ComputeTradeAmount(level), "", StopLossShortPips, null);
+                    
                     var id = result.Position.Id;
                     switch(level)
                     {
@@ -158,15 +171,15 @@ namespace cAlgo.Robots
             }
             else
             {
-                if(position.TradeType == TradeType.Buy && actualPrice < minPriceLastDaysForStop)
+                if(position.TradeType == TradeType.Buy && position.StopLoss != minPriceLastDaysForStop)
                 {
-                    Log($"Long position reach stop level (actualPrice < minPriceLastDaysForStop), position will be close [actualPrice: {actualPrice}, minPriceLastDaysForStop: {minPriceLastDaysForStop}].");
-                    position.Close();
+                    Log($"Long position is not at minPriceLastDaysForStop (stopLossShort != minPriceLastDaysForStop), position will be modified [actualPriceOfStopLoss: {position.StopLoss}, updatedPriceOfStopLoss: {minPriceLastDaysForStop}].");
+                    ModifyPosition(position, minPriceLastDaysForStop, position.TakeProfit);
                 }
-                if(position.TradeType == TradeType.Sell && actualPrice > maxPriceLastDaysForStop)
+                if(position.TradeType == TradeType.Sell && position.StopLoss != maxPriceLastDaysForStop)
                 {
-                     Log($"Short position reach stop level (actualPrice > maxPriceLastDaysForStop), position will be close [actualPrice: {actualPrice}, maxPriceLastDaysForStop: {maxPriceLastDaysForStop}].");
-                    position.Close();
+                    Log($"Short position is not at maxPriceLastDaysForStop (stopLossShort != maxPriceLastDaysForStop), position will be modified [actualPriceOfStopLoss: {position.StopLoss}, updatedPriceOfStopLoss: {maxPriceLastDaysForStop}].");
+                    ModifyPosition(position, maxPriceLastDaysForStop, position.TakeProfit);
                 }
             }            
         }
