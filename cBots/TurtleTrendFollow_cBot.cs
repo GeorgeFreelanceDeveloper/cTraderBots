@@ -54,12 +54,6 @@ namespace cAlgo.Robots
         private readonly string LogSendersAddress = "senderaddress@email.com";
         private readonly string LogRecipientAddress = "recipientaddress@email.com";
         
-        // Computed properties
-        private double MoveForLongPositionStopLoss {get; set;}
-        private double MoveForShortPositionStopLoss {get; set;}
-        private double StopLossLongPips {get; set;}
-        private double StopLossShortPips {get; set;}
-        
         public enum Level { L1, L2 }
         
         protected override void OnStart()
@@ -135,21 +129,19 @@ namespace cAlgo.Robots
             double maxPriceLastDaysForStop = barsForStop.Max(b=>b.High);
             double minPriceLastDaysForStop = barsForStop.Min(b=>b.Low);
             
-            MoveForLongPositionStopLoss = maxPriceLastDaysForEntry - minPriceLastDaysForStop;
-            MoveForShortPositionStopLoss = minPriceLastDaysForEntry - maxPriceLastDaysForStop;
-            StopLossLongPips = (Math.Abs(MoveForLongPositionStopLoss)/Symbol.PipSize);
-            StopLossShortPips = (Math.Abs(MoveForShortPositionStopLoss)/Symbol.PipSize);
-            
             Position position = Positions.ToList().Where(p=>p.Id == tradeId).FirstOrDefault();
             
             if(position == null)
             {
                 if(actualPrice > maxPriceLastDaysForEntry)
                 {
-                    Log($"Price reach breakout zone for long (actualPrice > maxPriceLastDaysForEntry), bot will execute market long order. [actualPrice: {actualPrice}, maxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}, ]");
-                    TradeResult result = ExecuteMarketOrder(TradeType.Buy, Symbol.Name, ComputeTradeAmount(level), "", StopLossLongPips, null);
+                    double stopLossPips = (Math.Abs(maxPriceLastDaysForEntry - minPriceLastDaysForStop)/Symbol.PipSize);
+                    
+                    Log($"Price reach breakout zone for long (actualPrice > maxPriceLastDaysForEntry), bot will execute market long order. [actualPrice: {actualPrice}, maxPriceLastDaysForEntry: {maxPriceLastDaysForEntry},]");
+                    TradeResult result = ExecuteMarketOrder(TradeType.Buy, Symbol.Name, ComputeTradeAmount(level), "", stopLossPips, null);
                     
                     int id = result.Position.Id;
+                    
                     switch(level)
                     {
                         case Level.L1: Trade1_Id = id; break;
@@ -158,10 +150,13 @@ namespace cAlgo.Robots
                 }
                 else if (actualPrice < minPriceLastDaysForEntry && !LongOnly)
                 {
+                    double stopLossPips = (Math.Abs(minPriceLastDaysForEntry - maxPriceLastDaysForStop)/Symbol.PipSize);
+                    
                     Log($"Price reach breakout zone for short (actualPrice < minPriceLastDaysForEntry), bot will execute market short order. [actualPrice: {actualPrice}, minPriceLastDaysForEntry: {minPriceLastDaysForEntry}]");
-                    TradeResult result = ExecuteMarketOrder(TradeType.Sell, Symbol.Name, ComputeTradeAmount(level), "", StopLossShortPips, null);
+                    TradeResult result = ExecuteMarketOrder(TradeType.Sell, Symbol.Name, ComputeTradeAmount(level), "", stopLossPips, null);
                     
                     var id = result.Position.Id;
+                    
                     switch(level)
                     {
                         case Level.L1: Trade1_Id = id; break;
