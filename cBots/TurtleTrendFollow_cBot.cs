@@ -10,12 +10,15 @@ using cAlgo.API.Internals;
 
 /*
 Name: TurtleTrendFollow_cBot
-Description: An automated bot for trend following strategy Turtle.
+Description: The Turtle trend following trading strategy was developed by Richard Dennis and William Eckhardt in the early 1980s. 
+The story goes that Richard Dennis, a successful commodity trader, believed that trading could be taught to anyone, 
+and he decided to conduct an experiment to prove his theory. He recruited a group of people, known as the "Turtles," 
+and taught them his trading system.
 Author: GeorgeFreelanceDeveloper
 Updated by: LucyFreelanceDeveloper, GeorgeFreelanceDeveloper
 CreateDate: 3.1.2023
-UpdateDate: 10.1.2023
-Version: 0.0.3
+UpdateDate: 13.1.2023
+Version: 0.0.4
 */
 
 namespace cAlgo.Robots
@@ -30,11 +33,17 @@ namespace cAlgo.Robots
         [Parameter(DefaultValue = 10)]
         public int CountPeriodForStop1 { get; set; }
         
+        [Parameter(DefaultValue = true)]
+        public bool EnableL1 { get; set; }
+        
         [Parameter(DefaultValue = 55)]
         public int CountPeriodForEntry2 { get; set; }
         
         [Parameter(DefaultValue = 20)]
         public int CountPeriodForStop2 { get; set; }
+        
+        [Parameter(DefaultValue = false)]
+        public bool EnableL2 { get; set; }
         
         [Parameter(DefaultValue = 2.5)]
         public double RiskPercentage { get; set; }
@@ -54,6 +63,8 @@ namespace cAlgo.Robots
         private readonly string LogSendersAddress = "senderaddress@email.com";
         private readonly string LogRecipientAddress = "recipientaddress@email.com";
         
+        // Level 1: Swing
+        // Level 2: Position
         public enum Level { L1, L2 }
         
         protected override void OnStart()
@@ -63,8 +74,10 @@ namespace cAlgo.Robots
             Log("User defined properties:");
             Log($"CountPeriodForEntry1: {CountPeriodForEntry1}");
             Log($"CountPeriodForStop1: {CountPeriodForStop1}");
+            Log($"EnableL1: {EnableL1}");
             Log($"CountPeriodForEntry2: {CountPeriodForEntry2}");
             Log($"CountPeriodForStop2: {CountPeriodForStop2}");
+            Log($"EnableL2: {EnableL2}");
             Log($"Trade1_Id: {Trade1_Id}");
             Log($"Trade2_Id: {Trade2_Id}");
             Log($"RiskPercentage: {RiskPercentage}");
@@ -82,22 +95,18 @@ namespace cAlgo.Robots
             Positions.Opened += PositionsOnOpened;
             Positions.Closed += PositionsOnClosed;
         }
-
-        /*
-        protected override void OnTick()
-        {
-            Log("Start OnTick");
-            ExecuteStrategyPerLevel(Level.L1);
-            ExecuteStrategyPerLevel(Level.L2);
-            Log("Finished OnTick");  
-        }
-        */
         
         protected override void OnBar()
         {
             Log("Start OnBar");
-            ExecuteStrategyPerLevel(Level.L1);
-            ExecuteStrategyPerLevel(Level.L2);
+            if(EnableL1)
+            {
+                ExecuteStrategyPerLevel(Level.L1);
+            }
+            if(EnableL2)
+            {
+                ExecuteStrategyPerLevel(Level.L2);
+            }
             Log("Finished OnBar"); 
         }
 
