@@ -17,8 +17,8 @@ and taught them his trading system.
 Author: GeorgeFreelanceDeveloper
 Updated by: LucyFreelanceDeveloper, GeorgeFreelanceDeveloper
 CreateDate: 3.1.2023
-UpdateDate: 13.1.2023
-Version: 0.0.4
+UpdateDate: 25.1.2023
+Version: 0.0.5
 */
 
 namespace cAlgo.Robots
@@ -58,7 +58,6 @@ namespace cAlgo.Robots
         public int Trade2_Id { get; set; }
        
         // Constants
-        private readonly int ATR_Period = 20;
         private readonly string LogFolderPath = "c:/Logs/cBots/TurtleTrendFollow/";
         private readonly string LogSendersAddress = "senderaddress@email.com";
         private readonly string LogRecipientAddress = "recipientaddress@email.com";
@@ -146,7 +145,8 @@ namespace cAlgo.Robots
                 {
                     Log($"Price reach breakout zone for long (actualPrice > maxPriceLastDaysForEntry), bot will execute market long order. [actualPrice: {actualPrice}, maxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}]");
                     double stopLossPips = (Math.Abs(maxPriceLastDaysForEntry - minPriceLastDaysForStop)/Symbol.PipSize);
-                    TradeResult result = ExecuteMarketOrder(TradeType.Buy, Symbol.Name, ComputeTradeAmount(level), "", stopLossPips, null);
+                    double amount = ComputeTradeAmount(maxPriceLastDaysForEntry, minPriceLastDaysForStop);
+                    TradeResult result = ExecuteMarketOrder(TradeType.Buy, Symbol.Name, amount, "", stopLossPips, null);
                     
                     int id = result.Position.Id;
                     
@@ -160,7 +160,8 @@ namespace cAlgo.Robots
                 {
                     Log($"Price reach breakout zone for short (actualPrice < minPriceLastDaysForEntry), bot will execute market short order. [actualPrice: {actualPrice}, minPriceLastDaysForEntry: {minPriceLastDaysForEntry}]");
                     double stopLossPips = (Math.Abs(minPriceLastDaysForEntry - maxPriceLastDaysForStop)/Symbol.PipSize);
-                    TradeResult result = ExecuteMarketOrder(TradeType.Sell, Symbol.Name, ComputeTradeAmount(level), "", stopLossPips, null);
+                    double amount = ComputeTradeAmount(minPriceLastDaysForEntry, maxPriceLastDaysForStop);
+                    TradeResult result = ExecuteMarketOrder(TradeType.Sell, Symbol.Name, amount, "", stopLossPips, null);
                     
                     var id = result.Position.Id;
                     
@@ -205,13 +206,13 @@ namespace cAlgo.Robots
             }
         }
         
-        private double ComputeTradeAmount(Level level)
+        private double ComputeTradeAmount(double entryPrice, double stopPrice)
         {
-            AverageTrueRange ATR = Indicators.AverageTrueRange(MarketData.GetBars(TimeFrame.Daily), ATR_Period, MovingAverageType.Simple); 
-            int atrMultiplier = level == Level.L1 ? 2 : 4;
-            double amount = ((RiskPercentage/100) * Account.Balance) / (atrMultiplier*ATR.Result.Last());
-            double amountNormalized = Symbol.NormalizeVolumeInUnits(amount);
-            return amountNormalized;
+            double riskPerTrade = (RiskPercentage / 100) * Account.Balance;
+            double move = entryPrice - stopPrice;
+            double amountRaw = riskPerTrade / ((Math.Abs(move) / Symbol.PipSize) * Symbol.PipValue);
+            double amount = ((int)(amountRaw / Symbol.VolumeInUnitsStep)) * Symbol.VolumeInUnitsStep;
+            return amount;
         }
 
         private List<String> ValidateInputs()
