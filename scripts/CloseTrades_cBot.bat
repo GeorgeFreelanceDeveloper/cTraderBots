@@ -9,8 +9,7 @@ set period="m1"
 set Day="5"
 set Hours="20"
 set Minutes="0"
-set All="True"
-set Market="Copper"
+set ExcludeMarkets="BTCUSD,ETHUSD"
 
 ::ctrader bot
-ctrader-cli.exe run C:\Users\Administrator\Documents\cAlgo\Sources\Robots\CloseTrades_cBot.algo --ctid=%ctid% --pwd-file=%pwd-file% --account=%account% --symbol=%symbol% --period=%period% --environment-variables --full-access --Day=%Day% --Hours=%Hours% --Minutes=%Minutes% --All=%All% --Market=%Market%
+ctrader-cli.exe run C:\Users\Administrator\Documents\cAlgo\Sources\Robots\CloseTrades_cBot.algo --ctid=%ctid% --pwd-file=%pwd-file% --account=%account% --symbol=%symbol% --period=%period% --environment-variables --full-access --Day=%Day% --Hours=%Hours% --Minutes=%Minutes% --ExcludeMarkets=%ExcludeMarkets%
