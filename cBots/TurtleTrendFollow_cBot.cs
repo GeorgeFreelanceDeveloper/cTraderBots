@@ -15,10 +15,9 @@ The story goes that Richard Dennis, a successful commodity trader, believed that
 and he decided to conduct an experiment to prove his theory. He recruited a group of people, known as the "Turtles," 
 and taught them his trading system.
 Author: GeorgeFreelanceDeveloper
-Updated by: LucyFreelanceDeveloper, GeorgeFreelanceDeveloper
 CreateDate: 3.1.2023
-UpdateDate: 25.1.2023
-Version: 0.0.5
+UpdateDate: 28.1.2023, UpdatedBy: LucyFreelanceDeveloper
+Version: 0.0.6
 */
 
 namespace cAlgo.Robots
@@ -51,11 +50,6 @@ namespace cAlgo.Robots
         [Parameter(DefaultValue = true)]
         public bool LongOnly { get; set; }
 
-        [Parameter(DefaultValue = -1)]
-        public int Trade1_Id { get; set; }
-
-        [Parameter(DefaultValue = -1)]
-        public int Trade2_Id { get; set; }
        
         // Constants
         private readonly string LogFolderPath = "c:/Logs/cBots/TurtleTrendFollow/";
@@ -77,8 +71,6 @@ namespace cAlgo.Robots
             Log($"CountPeriodForEntry2: {CountPeriodForEntry2}");
             Log($"CountPeriodForStop2: {CountPeriodForStop2}");
             Log($"EnableL2: {EnableL2}");
-            Log($"Trade1_Id: {Trade1_Id}");
-            Log($"Trade2_Id: {Trade2_Id}");
             Log($"RiskPercentage: {RiskPercentage}");
 
             Log("Validation of User defined properties ...");
@@ -122,22 +114,22 @@ namespace cAlgo.Robots
         private void ExecuteStrategyPerLevel(Level level)
         {
             Log($"ExecuteStrategyPerLevel: {level}");
-            int CountPeriodForEntry = level == Level.L1 ? CountPeriodForEntry1 : CountPeriodForEntry2;
-            int CountPeriodForStop = level == Level.L1 ? CountPeriodForStop1 : CountPeriodForStop2;
-            int tradeId = level == Level.L1 ? Trade1_Id : Trade2_Id;
+            int countPeriodForEntry = level == Level.L1 ? CountPeriodForEntry1 : CountPeriodForEntry2;
+            int countPeriodForStop = level == Level.L1 ? CountPeriodForStop1 : CountPeriodForStop2;
+            string label = $"TurtleTrendFollow_cBot-{level}";
             
             double actualPrice = MarketData.GetTicks().Last().Ask;
             //double actualPrice = MarketData.GetBars(TimeFrame.Minute).Last().Close; // For backtest on m1 bars
             
-            var barsForEntry = MarketData.GetBars(TimeFrame.Daily).SkipLast(1).ToList().TakeLast(CountPeriodForEntry);
+            var barsForEntry = MarketData.GetBars(TimeFrame.Daily).SkipLast(1).ToList().TakeLast(countPeriodForEntry);
             double maxPriceLastDaysForEntry =  barsForEntry.Max(b=>b.High);
             double minPriceLastDaysForEntry = barsForEntry.Min(b=>b.Low);
             
-            var barsForStop = MarketData.GetBars(TimeFrame.Daily).SkipLast(1).ToList().TakeLast(CountPeriodForStop);
+            var barsForStop = MarketData.GetBars(TimeFrame.Daily).SkipLast(1).ToList().TakeLast(countPeriodForStop);
             double maxPriceLastDaysForStop = barsForStop.Max(b=>b.High);
             double minPriceLastDaysForStop = barsForStop.Min(b=>b.Low);
             
-            Position position = Positions.ToList().Where(p=>p.Id == tradeId).FirstOrDefault();
+            Position position = Positions.Find(label);
             
             if(position == null)
             {
@@ -146,30 +138,14 @@ namespace cAlgo.Robots
                     Log($"Price reach breakout zone for long (actualPrice > maxPriceLastDaysForEntry), bot will execute market long order. [actualPrice: {actualPrice}, maxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}]");
                     double stopLossPips = (Math.Abs(maxPriceLastDaysForEntry - minPriceLastDaysForStop)/Symbol.PipSize);
                     double amount = ComputeTradeAmount(maxPriceLastDaysForEntry, minPriceLastDaysForStop);
-                    TradeResult result = ExecuteMarketOrder(TradeType.Buy, Symbol.Name, amount, "", stopLossPips, null);
-                    
-                    int id = result.Position.Id;
-                    
-                    switch(level)
-                    {
-                        case Level.L1: Trade1_Id = id; break;
-                        case Level.L2: Trade2_Id = id; break;
-                    }
+                    ExecuteMarketOrder(TradeType.Buy, Symbol.Name, amount, label, stopLossPips, null);
                 }
                 else if (actualPrice < minPriceLastDaysForEntry && !LongOnly)
                 {
                     Log($"Price reach breakout zone for short (actualPrice < minPriceLastDaysForEntry), bot will execute market short order. [actualPrice: {actualPrice}, minPriceLastDaysForEntry: {minPriceLastDaysForEntry}]");
                     double stopLossPips = (Math.Abs(minPriceLastDaysForEntry - maxPriceLastDaysForStop)/Symbol.PipSize);
                     double amount = ComputeTradeAmount(minPriceLastDaysForEntry, maxPriceLastDaysForStop);
-                    TradeResult result = ExecuteMarketOrder(TradeType.Sell, Symbol.Name, amount, "", stopLossPips, null);
-                    
-                    var id = result.Position.Id;
-                    
-                    switch(level)
-                    {
-                        case Level.L1: Trade1_Id = id; break;
-                        case Level.L2: Trade2_Id = id; break;
-                    }
+                    ExecuteMarketOrder(TradeType.Sell, Symbol.Name, amount, label, stopLossPips, null);
                 }
             }
             else
