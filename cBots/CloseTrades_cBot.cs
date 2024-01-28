@@ -13,8 +13,8 @@ Name: CloseTrades_cBot
 Description: Bot closing pending orders and opened positions at defined date and time. You can set close for all trades or specific market.
 Author: LucyFreelanceDeveloper
 CreateDate: 29.10.2023
-UpdateDate: 30.12.2023, UpdatedBy: GeorgeFreelanceDeveloper
-Version: 1.0.2
+UpdateDate: 28.1.2024 UpdatedBy: GeorgeFreelanceDeveloper
+Version: 1.0.3
 */
 
 namespace cAlgo.Robots
@@ -31,15 +31,13 @@ namespace cAlgo.Robots
 
         [Parameter(DefaultValue = 0)]
         public int Minutes {get; set;}
-
-        [Parameter(DefaultValue = true)]
-        public bool All {get; set;}
-
-        [Parameter(DefaultValue = "Copper")]
-        public string Market {get; set;}
+        
+        [Parameter(DefaultValue ="BTCUSD,ETHUSD")]
+        public string ExcludeMarkets {get; set;}
 
         // Constants
         private TimeOnly CloseTime {get; set;}
+        private readonly string Separator = ",";
         private readonly string LogFolderPath = "c:/Logs/cBots/CloseTrades/";
         private readonly string LogSendersAddress = "senderaddress@email.com";
         private readonly string LogRecipientAddress = "recipientaddress@email.com";
@@ -52,8 +50,7 @@ namespace cAlgo.Robots
             Log(String.Format("Day: {0}", Day));
             Log(String.Format("Hours: {0}", Hours));
             Log(String.Format("Minutes: {0}", Minutes));
-            Log(String.Format("All: {0}", All));
-            Log(String.Format("Market: {0}", Market));
+            Log(String.Format("ExcludeMarkets: {0}", ExcludeMarkets));
             
             Log("Validation of User defined properties ...");
             List<String> inputErrorMessages = ValidateInputs();
@@ -80,7 +77,7 @@ namespace cAlgo.Robots
              
             if(now.DayOfWeek == Day && TimeOnly.FromDateTime(now) >= CloseTime)
             {
-               CancelOrdersAndPositions(All, Market);
+               CancelOrdersAndPositions();
             }
             
             Log("Finished onBar step");
@@ -91,15 +88,16 @@ namespace cAlgo.Robots
             Log(exception.ToString(), "ERROR");
         }
         
-        private void CancelOrdersAndPositions(bool all, string market)
+        private void CancelOrdersAndPositions()
         {
             Log("Start closing orders and positions");
+            var excludeMarketsList = ExcludeMarkets.Split(Separator);
             
-            PendingOrders.Where(order => all || order.SymbolName == market)
+            PendingOrders.Where(order => !excludeMarketsList.Contains(order.SymbolName))
                 .ToList()
                 .ForEach(order => CancelPendingOrder(order));
                 
-            Positions.Where(position => all || position.SymbolName == market)
+            Positions.Where(position => !excludeMarketsList.Contains(position.SymbolName))
                 .ToList()
                 .ForEach(position => ClosePosition(position));
                 
@@ -120,9 +118,12 @@ namespace cAlgo.Robots
                  errMessages.Add(String.Format("WARNING: Minutes must be defined and greater or equal to 0 and less or equal to 60. [Minutes: {0}]", Minutes));
             }
             
-            if (!All && (Market == null || Market == ""))
-            {
-                errMessages.Add(String.Format("WARNING: Market must be defined. [Market: {0}]", Market));
+            foreach (var market in ExcludeMarkets.Split(Separator))
+            {    
+                if(!Symbols.Contains(market) && market!="")
+                {
+                    errMessages.Add(String.Format("WARNING: Not existed market in ExcludeMarkets array. [Market: {0}]", market));
+                }
             }
             
             return errMessages;
