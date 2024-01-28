@@ -62,7 +62,7 @@ namespace cAlgo.Robots
         
         protected override void OnStart()
         {
-            //Log("Start TurtleTrendFollow_cBot");
+            Log("Start TurtleTrendFollow_cBot");
 
             Log("User defined properties:");
             Log($"CountPeriodForEntry1: {CountPeriodForEntry1}");
@@ -103,7 +103,7 @@ namespace cAlgo.Robots
 
         protected override void OnStop()
         {
-            //Log("Finished TurtleTrendFollow_cBot");
+            Log("Finished TurtleTrendFollow_cBot");
         }
 
         protected override void OnException(Exception exception)
@@ -114,24 +114,22 @@ namespace cAlgo.Robots
         private void ExecuteStrategyPerLevel(Level level)
         {
             Log($"ExecuteStrategyPerLevel: {level}");
-            int CountPeriodForEntry = level == Level.L1 ? CountPeriodForEntry1 : CountPeriodForEntry2;
-            int CountPeriodForStop = level == Level.L1 ? CountPeriodForStop1 : CountPeriodForStop2;
-            string Label = level == Level.L1 ? "TurtleTrendFollow_cBot-Level_1" : "TurtleTrendFollow_cBot-Level_2";
-            Log($"Label: {Label}");
+            int countPeriodForEntry = level == Level.L1 ? CountPeriodForEntry1 : CountPeriodForEntry2;
+            int countPeriodForStop = level == Level.L1 ? CountPeriodForStop1 : CountPeriodForStop2;
+            string label = $"TurtleTrendFollow_cBot-{level}";
             
-            //double actualPrice = MarketData.GetTicks().Last().Ask;
-            double actualPrice = MarketData.GetBars(TimeFrame.Minute).Last().Close; // For backtest on m1 bars
+            double actualPrice = MarketData.GetTicks().Last().Ask;
+            //double actualPrice = MarketData.GetBars(TimeFrame.Minute).Last().Close; // For backtest on m1 bars
             
-            var barsForEntry = MarketData.GetBars(TimeFrame.Daily).SkipLast(1).ToList().TakeLast(CountPeriodForEntry);
+            var barsForEntry = MarketData.GetBars(TimeFrame.Daily).SkipLast(1).ToList().TakeLast(countPeriodForEntry);
             double maxPriceLastDaysForEntry =  barsForEntry.Max(b=>b.High);
             double minPriceLastDaysForEntry = barsForEntry.Min(b=>b.Low);
             
-            var barsForStop = MarketData.GetBars(TimeFrame.Daily).SkipLast(1).ToList().TakeLast(CountPeriodForStop);
+            var barsForStop = MarketData.GetBars(TimeFrame.Daily).SkipLast(1).ToList().TakeLast(countPeriodForStop);
             double maxPriceLastDaysForStop = barsForStop.Max(b=>b.High);
             double minPriceLastDaysForStop = barsForStop.Min(b=>b.Low);
             
-            Position position = Positions.ToList().Where(p=>p.Label == Label).FirstOrDefault();
-            Log($"Position: {position}");
+            Position position = Positions.Find(label);
             
             if(position == null)
             {
@@ -140,16 +138,14 @@ namespace cAlgo.Robots
                     Log($"Price reach breakout zone for long (actualPrice > maxPriceLastDaysForEntry), bot will execute market long order. [actualPrice: {actualPrice}, maxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}]");
                     double stopLossPips = (Math.Abs(maxPriceLastDaysForEntry - minPriceLastDaysForStop)/Symbol.PipSize);
                     double amount = ComputeTradeAmount(maxPriceLastDaysForEntry, minPriceLastDaysForStop);
-                    Log($"Label: {Label}");
-                    TradeResult result = ExecuteMarketOrder(TradeType.Buy, Symbol.Name, amount, Label, stopLossPips, null);
+                    ExecuteMarketOrder(TradeType.Buy, Symbol.Name, amount, label, stopLossPips, null);
                 }
                 else if (actualPrice < minPriceLastDaysForEntry && !LongOnly)
                 {
                     Log($"Price reach breakout zone for short (actualPrice < minPriceLastDaysForEntry), bot will execute market short order. [actualPrice: {actualPrice}, minPriceLastDaysForEntry: {minPriceLastDaysForEntry}]");
                     double stopLossPips = (Math.Abs(minPriceLastDaysForEntry - maxPriceLastDaysForStop)/Symbol.PipSize);
                     double amount = ComputeTradeAmount(minPriceLastDaysForEntry, maxPriceLastDaysForStop);
-                    Log($"Label: {Label}");
-                    TradeResult result = ExecuteMarketOrder(TradeType.Sell, Symbol.Name, amount, Label, stopLossPips, null);
+                    ExecuteMarketOrder(TradeType.Sell, Symbol.Name, amount, label, stopLossPips, null);
                 }
             }
             else
