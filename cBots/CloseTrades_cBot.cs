@@ -13,7 +13,7 @@ Name: CloseTrades_cBot
 Description: Bot closing pending orders and opened positions at defined date and time. You can set close for all trades or specific market.
 Author: LucyFreelanceDeveloper
 CreateDate: 29.10.2023
-UpdateDate: 30.12.2023
+UpdateDate: 30.12.2023, UpdatedBy: GeorgeFreelanceDeveloper
 Version: 1.0.2
 */
 
