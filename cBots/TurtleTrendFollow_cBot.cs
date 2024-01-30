@@ -16,8 +16,8 @@ and he decided to conduct an experiment to prove his theory. He recruited a grou
 and taught them his trading system.
 Author: GeorgeFreelanceDeveloper
 CreateDate: 3.1.2023
-UpdateDate: 28.1.2023, UpdatedBy: LucyFreelanceDeveloper
-Version: 0.0.6
+UpdateDate: 29.1.2023, UpdatedBy: GeorgeFreelanceDeveloper
+Version: 0.0.7
 */
 
 namespace cAlgo.Robots
@@ -49,12 +49,16 @@ namespace cAlgo.Robots
         
         [Parameter(DefaultValue = true)]
         public bool LongOnly { get; set; }
+        
+        [Parameter(DefaultValue = "BTCUSD,NAS100")]
+        public string Markets {get; set; }
 
        
         // Constants
         private readonly string LogFolderPath = "c:/Logs/cBots/TurtleTrendFollow/";
         private readonly string LogSendersAddress = "senderaddress@email.com";
         private readonly string LogRecipientAddress = "recipientaddress@email.com";
+        private readonly string Separator = ",";
         
         // Level 1: Swing
         // Level 2: Position
@@ -72,6 +76,7 @@ namespace cAlgo.Robots
             Log($"CountPeriodForStop2: {CountPeriodForStop2}");
             Log($"EnableL2: {EnableL2}");
             Log($"RiskPercentage: {RiskPercentage}");
+            Log($"Markets: {Markets}");
 
             Log("Validation of User defined properties ...");
             List<String> inputErrorMessages = ValidateInputs();
@@ -90,14 +95,21 @@ namespace cAlgo.Robots
         protected override void OnBar()
         {
             Log("Start OnBar");
-            if(EnableL1)
+            
+            
+            foreach (var market in Markets.Split(Separator))
             {
-                ExecuteStrategyPerLevel(Level.L1);
+                Log($"Process market: {market}");
+                if(EnableL1)
+                {
+                    ExecuteStrategyPerLevel(Level.L1, market);
+                }
+                if(EnableL2)
+                {
+                    ExecuteStrategyPerLevel(Level.L2, market);
+                }
             }
-            if(EnableL2)
-            {
-                ExecuteStrategyPerLevel(Level.L2);
-            }
+
             Log("Finished OnBar"); 
         }
 
@@ -111,21 +123,21 @@ namespace cAlgo.Robots
             Log(exception.ToString(), "ERROR");
         }
         
-        private void ExecuteStrategyPerLevel(Level level)
+        private void ExecuteStrategyPerLevel(Level level, string market)
         {
             Log($"ExecuteStrategyPerLevel: {level}");
             int countPeriodForEntry = level == Level.L1 ? CountPeriodForEntry1 : CountPeriodForEntry2;
             int countPeriodForStop = level == Level.L1 ? CountPeriodForStop1 : CountPeriodForStop2;
-            string label = $"TurtleTrendFollow_cBot-{level}";
+            string label = $"TurtleTrendFollow_cBot-{market}-{level}";
             
-            double actualPrice = MarketData.GetTicks().Last().Ask;
-            //double actualPrice = MarketData.GetBars(TimeFrame.Minute).Last().Close; // For backtest on m1 bars
+            //double actualPrice = MarketData.GetTicks(market).Last().Ask;
+            double actualPrice = MarketData.GetBars(TimeFrame.Minute, market).Last().Close; // For backtest on m1 bars
             
-            var barsForEntry = MarketData.GetBars(TimeFrame.Daily).SkipLast(1).ToList().TakeLast(countPeriodForEntry);
+            var barsForEntry = MarketData.GetBars(TimeFrame.Daily, market).SkipLast(1).ToList().TakeLast(countPeriodForEntry);
             double maxPriceLastDaysForEntry =  barsForEntry.Max(b=>b.High);
             double minPriceLastDaysForEntry = barsForEntry.Min(b=>b.Low);
             
-            var barsForStop = MarketData.GetBars(TimeFrame.Daily).SkipLast(1).ToList().TakeLast(countPeriodForStop);
+            var barsForStop = MarketData.GetBars(TimeFrame.Daily, market).SkipLast(1).ToList().TakeLast(countPeriodForStop);
             double maxPriceLastDaysForStop = barsForStop.Max(b=>b.High);
             double minPriceLastDaysForStop = barsForStop.Min(b=>b.Low);
             
@@ -137,15 +149,15 @@ namespace cAlgo.Robots
                 {
                     Log($"Price reach breakout zone for long (actualPrice > maxPriceLastDaysForEntry), bot will execute market long order. [actualPrice: {actualPrice}, maxPriceLastDaysForEntry: {maxPriceLastDaysForEntry}]");
                     double stopLossPips = (Math.Abs(maxPriceLastDaysForEntry - minPriceLastDaysForStop)/Symbol.PipSize);
-                    double amount = ComputeTradeAmount(maxPriceLastDaysForEntry, minPriceLastDaysForStop);
-                    ExecuteMarketOrder(TradeType.Buy, Symbol.Name, amount, label, stopLossPips, null);
+                    double amount = ComputeTradeAmount(maxPriceLastDaysForEntry, minPriceLastDaysForStop, market);
+                    ExecuteMarketOrder(TradeType.Buy, market, amount, label, stopLossPips, null);
                 }
                 else if (actualPrice < minPriceLastDaysForEntry && !LongOnly)
                 {
                     Log($"Price reach breakout zone for short (actualPrice < minPriceLastDaysForEntry), bot will execute market short order. [actualPrice: {actualPrice}, minPriceLastDaysForEntry: {minPriceLastDaysForEntry}]");
                     double stopLossPips = (Math.Abs(minPriceLastDaysForEntry - maxPriceLastDaysForStop)/Symbol.PipSize);
-                    double amount = ComputeTradeAmount(minPriceLastDaysForEntry, maxPriceLastDaysForStop);
-                    ExecuteMarketOrder(TradeType.Sell, Symbol.Name, amount, label, stopLossPips, null);
+                    double amount = ComputeTradeAmount(minPriceLastDaysForEntry, maxPriceLastDaysForStop, market);
+                    ExecuteMarketOrder(TradeType.Sell, market, amount, label, stopLossPips, null);
                 }
             }
             else
@@ -168,7 +180,7 @@ namespace cAlgo.Robots
             var pos = args.Position;
             if (pos.Symbol.ToString().SequenceEqual(Symbol.Name)){
                  Log("Order was converted to position.");
-                 Log($"Position id {pos.Id} opened at {pos.EntryPrice}");
+                 Log($"Position id {pos.Id}, market {pos.Symbol.Name} opened at {pos.EntryPrice}");
             }
 
         }
@@ -178,16 +190,17 @@ namespace cAlgo.Robots
             var pos = args.Position;
             if(pos.Symbol.ToString().SequenceEqual(Symbol.Name)){
                 string profitLossMessage = pos.GrossProfit >= 0 ? "profit" : "loss";   
-                Log($"Position id {pos.Id} closed with {pos.GrossProfit} {profitLossMessage}");
+                Log($"Position id {pos.Id}, market {pos.Symbol.Name} closed with {pos.GrossProfit} {profitLossMessage}");
             }
         }
         
-        private double ComputeTradeAmount(double entryPrice, double stopPrice)
+        private double ComputeTradeAmount(double entryPrice, double stopPrice, string market)
         {
+            Symbol symbol = Symbols.GetSymbols(market)[0];
             double riskPerTrade = (RiskPercentage / 100) * Account.Balance;
             double move = entryPrice - stopPrice;
-            double amountRaw = riskPerTrade / ((Math.Abs(move) / Symbol.PipSize) * Symbol.PipValue);
-            double amount = ((int)(amountRaw / Symbol.VolumeInUnitsStep)) * Symbol.VolumeInUnitsStep;
+            double amountRaw = riskPerTrade / ((Math.Abs(move) / symbol.PipSize) * symbol.PipValue);
+            double amount = ((int)(amountRaw / symbol.VolumeInUnitsStep)) * symbol.VolumeInUnitsStep;
             return amount;
         }
 
@@ -218,6 +231,14 @@ namespace cAlgo.Robots
             if (RiskPercentage <= 0)
             {
                  errMessages.Add($"WARNING: RiskPercentage must be greater than 0. [RiskPercentage: {RiskPercentage}]");
+            }
+            
+            foreach (var market in Markets.Split(Separator))
+            {    
+                if(!Symbols.Contains(market) && market!="")
+                {
+                    errMessages.Add(String.Format("WARNING: Not existed market in Markets array. [Market: {0}]", market));
+                }
             }
             
             return errMessages;
