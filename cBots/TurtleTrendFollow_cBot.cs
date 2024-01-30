@@ -130,8 +130,8 @@ namespace cAlgo.Robots
             int countPeriodForStop = level == Level.L1 ? CountPeriodForStop1 : CountPeriodForStop2;
             string label = $"TurtleTrendFollow_cBot-{market}-{level}";
             
-            //double actualPrice = MarketData.GetTicks(market).Last().Ask;
-            double actualPrice = MarketData.GetBars(TimeFrame.Minute, market).Last().Close; // For backtest on m1 bars
+            double actualPrice = MarketData.GetTicks(market).Last().Ask;
+            //double actualPrice = MarketData.GetBars(TimeFrame.Minute, market).Last().Close; // For backtest on m1 bars
             
             var barsForEntry = MarketData.GetBars(TimeFrame.Daily, market).SkipLast(1).ToList().TakeLast(countPeriodForEntry);
             double maxPriceLastDaysForEntry =  barsForEntry.Max(b=>b.High);
